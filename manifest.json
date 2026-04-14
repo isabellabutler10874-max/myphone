@@ -1,6 +1,9 @@
 {
-  "name": "MyVirtualPhone",
-  "version": "1.0.0",
-  "description": "我的虚拟小手机",
-  "author": "isabellabutler"
+  "name": "MyPhone",
+  "display_name": "📱 虚拟手机",
+  "version": "1.0.1",
+  "description": "提供一个可交互的虚拟手机 UI 扩展",
+  "author": "tater",
+  "loading_order": 10,
+  "js": "index.js"
 }
