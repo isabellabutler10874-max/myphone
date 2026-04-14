@@ -1,51 +1,19 @@
-(function() {
-    // 这里依然调用你生成的 .io 网页画面
-    const YOUR_GITHUB_URL = 'https://isabellabutler10874-max.github.io/myphone/';
+import { extensionHelper } from '../../../../extensions.js';
 
-    const initExtension = () => {
-        const floatingButtonHtml = `
-            <div id="virtual-phone-floating-btn" style="
-                position: fixed;
-                bottom: 30px;
-                right: 30px;
-                width: 48px;
-                height: 48px;
-                background-color: white;
-                border-radius: 50%;
-                box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                font-size: 24px;
-                cursor: pointer;
-                z-index: 999999;
-            ">ℹ️</div>
-        `;
+jQuery(async () => {
+    const button = $(`
+        <div id="my_phone_button" class="fa-solid fa-mobile-screen-button interactable" 
+             title="打开我的小手机" style="margin: 0 4px; cursor: pointer;">
+        </div>
+    `);
 
-        const phoneModalHtml = `
-            <div id="virtual-phone-modal" style="
-                display: none;
-                position: fixed;
-                bottom: 90px;
-                right: 30px;
-                width: 410px;
-                height: 720px;
-                z-index: 999998;
-                background: transparent;
-            ">
-                <iframe src="${YOUR_GITHUB_URL}" style="width: 100%; height: 100%; border: none; border-radius: 40px;"></iframe>
-            </div>
-        `;
+    button.on('click', () => {
+        // 方式 A：弹出新窗口（最简单）
+        window.open('https://你的github用户名.github.io/仓库名/主界面.html', 
+                    '_blank', 'width=400,height=700');
 
-        if (!$('#virtual-phone-floating-btn').length) {
-            $('body').append(floatingButtonHtml);
-            $('body').append(phoneModalHtml);
+        // 方式 B：在 ST 内嵌 iframe 弹窗（后面细讲）
+    });
 
-            $('#virtual-phone-floating-btn').on('click', function() {
-                $('#virtual-phone-modal').fadeToggle(200);
-            });
-        }
-    };
-
-    $(document).ready(initExtension);
-})();
+    $('#extensionsMenu').append(button);  // 按钮会出现在 ST 右上角插件区
+});
