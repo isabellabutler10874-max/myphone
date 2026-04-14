@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>API 配置 - 像素级对齐版</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+	<style>
+/* Apple (iOS) 设计系统变量 */
+:root {
+    --bg-color: #F2F2F7; /* iOS 设置界面背景 */
+    --element-bg: #FFFFFF; /* 输入框/卡片背景 */
+    --text-primary: #000000;
+    --text-secondary: #8E8E93;
+    --interactive-bg: #C0D6F2; /* 要求的淡蓝色 */
+    --interactive-text: #333333; /* 要求的深灰色 */
+    --border-radius-element: 18px; /* 强烈的全包裹圆角 */
+    --border-radius-btn: 999px; /* 按钮采用胶囊圆角 */
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    overflow-y: auto; /* 允许内容滚动 */
+    position: relative;
+}
+
+/* =======================================
+   像素级对齐的状态栏 (固定在顶部)
+   ======================================= */
+.status-bar {
+    position: fixed; 
+    top: 14px; 
+    left: 0;
+    width: 100%; 
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 28px; box-sizing: border-box; font-size: 14px; font-weight: 600; color: var(--text-primary);
+    z-index: 200; pointer-events: none;
+    background: linear-gradient(to bottom, rgba(242,242,247,0.9) 30%, rgba(242,242,247,0)); /* 防止滚动时文字重叠 */
+    height: 30px;
+}
+
+/* 左上角返回按钮 (固定在顶部) */
+.back-btn {
+    position: fixed;
+    top: 52px;
+    left: 20px; 
+    font-size: 36px; 
+    color: var(--text-secondary);
+    cursor: pointer;
+    line-height: 0.8; 
+    z-index: 100;
+    transition: opacity 0.2s;
+}
+
+.back-btn:active {
+    opacity: 0.5;
+}
+
+.app-container {
+    width: 100%;
+    max-width: 400px;
+    padding: 90px 20px 40px 20px; /* 顶部留出状态栏和返回键的空间 */
+}
+
+.header-title {
+    font-size: 34px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 24px;
+    margin-top: 0; 
+}
+
+.section-title {
+    font-size: 13px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    margin-left: 12px;
+    letter-spacing: -0.1px;
+}
+
+/* 圆角包裹的输入框组 */
+.input-group {
+    margin-bottom: 16px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 15px;
+    font-weight: 500;
+    margin-left: 12px;
+    margin-bottom: 6px;
+    color: var(--text-secondary);
+}
+
+/* 真实的圆角包裹元素 */
+.rounded-element {
+    width: 100%;
+    background-color: var(--element-bg);
+    border: none;
+    outline: none;
+    padding: 16px;
+    font-size: 17px;
+    border-radius: var(--border-radius-element);
+    font-family: inherit;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    color: var(--text-primary);
+}
+
+.rounded-element::placeholder {
+    color: #C7C7CC;
+}
+
+/* 交互按钮 */
+button {
+    width: 100%;
+    background-color: var(--interactive-bg);
+    color: var(--interactive-text);
+    font-size: 17px;
+    font-weight: 600;
+    border: none;
+    padding: 16px;
+    border-radius: var(--border-radius-btn); /* 胶囊圆角 */
+    cursor: pointer;
+    transition: transform 0.1s ease, opacity 0.2s ease;
+    margin-top: 12px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 12px rgba(192, 214, 242, 0.4); /* 淡蓝色的光晕阴影 */
+}
+
+button:active {
+    transform: scale(0.97);
+    opacity: 0.8;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* 下拉选择框定制 (原生 Select 套入圆角) */
+.select-wrapper {
+    position: relative;
+}
+
+select.rounded-element {
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    padding-right: 40px;
+}
+
+.select-wrapper::after {
+    content: '';
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%238E8E93'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    pointer-events: none;
+}
+
+/* 滑块 (Slider) */
+.slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.slider-label {
+    font-size: 15px; 
+    color: var(--text-secondary); 
+    font-weight: 500;
+}
+
+.temp-value {
+    font-weight: 600;
+    color: var(--text-primary);
+    background: #E5E5EA;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 15px;
+}
+
+input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    background: #E5E5EA;
+    border-radius: 999px;
+    outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #FFFFFF;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0,0,0,0.05);
+    cursor: pointer;
+}
+
+.config-card {
+    background-color: var(--element-bg);
+    border-radius: var(--border-radius-element);
+    padding: 20px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+/* 隐藏与状态 */
+#configSection {
+    display: none;
+    animation: fadeIn 0.4s ease forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.status-msg {
+    font-size: 14px;
+    text-align: center;
+    min-height: 20px;
+    margin-bottom: 16px;
+    color: #FF3B30; /* iOS Red */
+}
+
+/* 预设管理区样式 */
+.preset-container {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 24px;
+    background: var(--element-bg);
+    padding: 12px;
+    border-radius: var(--border-radius-element);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.action-btn {
+    background-color: var(--bg-color);
+    color: var(--interactive-text);
+    margin: 0;
+    padding: 12px 16px;
+    font-size: 14px;
+    width: auto;
+    box-shadow: none;
+    border-radius: 12px;
+}
+
+.action-btn:active {
+    background-color: #E5E5EA;
+}
+
+</style>
+</head>
+
+<body>
+    <div class="status-bar" id="status-bar">
+        <span id="clock"></span> 
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 14px;">
+            <span>📶</span>
+            <i class="fa-solid fa-wifi" style="-webkit-text-stroke: 0.5px var(--text-primary);"></i>
+            <span>🔋</span>
+        </div>
+    </div>
+
+    <div class="back-btn" onclick="if(typeof parent.closeApp === 'function') parent.closeApp()">‹</div>
+
+<div class="app-container">
+
+    <div class="header-title">模型设置</div>
+	<div class="preset-container">
+        <div class="input-group" style="margin-bottom: 0; flex: 1;">
+            <div class="select-wrapper">
+                <select id="presetSelect" class="rounded-element" style="padding: 12px; font-size: 15px;">
+                    <option value="">-- 选择或保存预设 --</option>
+                </select>
+            </div>
+        </div>
+        <button id="savePresetBtn" class="action-btn">保存当前</button>
+    </div>
+
+    <div class="section-title">API 配置</div>
+    
+    <div class="input-group">
+        <label for="apiUrl">API Base URL</label>
+        <input type="url" id="apiUrl" class="rounded-element" placeholder="例: https://api.openai.com/v1" value="https://api.openai.com/v1">
+    </div>
+
+    <div class="input-group">
+        <label for="apiKey">API Key</label>
+        <input type="password" id="apiKey" class="rounded-element" placeholder="sk-...">
+    </div>
+
+    <button id="connectBtn">连接并拉取模型</button>
+    <div id="statusMsg" class="status-msg"></div>
+
+    <div id="configSection">
+        <div class="section-title">模型与参数</div>
+        
+        <div class="input-group">
+            <label for="modelSelect">选择想使用的模型</label>
+            <div class="select-wrapper">
+                <select id="modelSelect" class="rounded-element">
+                    </select>
+            </div>
+        </div>
+
+        <div class="config-card">
+            <div class="slider-header">
+                <span class="slider-label">模型温度 (Temperature)</span>
+                <span class="temp-value" id="tempDisplay">0.7</span>
+            </div>
+            <input type="range" id="tempSlider" min="0" max="2" step="0.1" value="0.7">
+        </div>
+        
+        <button id="saveBtn">确定设置并开始使用</button>
+    </div>
+</div>
+
+<script>
+// --- 0. 同步真实时间 ---
+function updateAppTime() {
+    const d = new Date();
+    const clockEl = document.getElementById('clock');
+    if (clockEl) {
+        clockEl.innerText = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+}
+updateAppTime(); // 网页一加载立刻更新
+setInterval(updateAppTime, 1000); // 之后每秒跳动
+
+// 元素获取
+const apiUrlInput = document.getElementById('apiUrl');
+const apiKeyInput = document.getElementById('apiKey');
+const connectBtn = document.getElementById('connectBtn');
+const statusMsg = document.getElementById('statusMsg');
+
+const configSection = document.getElementById('configSection');
+const modelSelect = document.getElementById('modelSelect');
+const tempSlider = document.getElementById('tempSlider');
+const tempDisplay = document.getElementById('tempDisplay');
+const saveBtn = document.getElementById('saveBtn');
+
+// 新增的预设元素
+const presetSelect = document.getElementById('presetSelect');
+const savePresetBtn = document.getElementById('savePresetBtn');
+
+// ==========================================
+// 1. 页面加载时的“记忆恢复”
+// ==========================================
+window.addEventListener('DOMContentLoaded', () => {
+    loadPresetsFromStorage();
+    restoreLastActiveConfig();
+});
+
+// 恢复上一次锁定的状态，防止退出后白板
+function restoreLastActiveConfig() {
+    const lastConfigStr = localStorage.getItem('aiConfig');
+    if (lastConfigStr) {
+        try {
+            const data = JSON.parse(lastConfigStr);
+            apiUrlInput.value = data.baseUrl || 'https://api.openai.com/v1';
+            apiKeyInput.value = data.key || '';
+            tempSlider.value = data.temperature || 0.7;
+            tempDisplay.textContent = parseFloat(tempSlider.value).toFixed(1);
+
+            // 如果有上次选的模型，制造一个选项并展开面板
+            if (data.model) {
+                modelSelect.innerHTML = `<option value="${data.model}">${data.model}</option>`;
+                configSection.style.display = 'block';
+                connectBtn.textContent = "更新模型列表"; // 改变按钮文案，但不隐藏，方便重新拉取
+            }
+        } catch (e) {
+            console.error("读取上次配置失败", e);
+        }
+    }
+}
+
+// 从本地仓库加载所有保存的预设
+function loadPresetsFromStorage() {
+    const presetsStr = localStorage.getItem('aiPresets');
+    let presets = {};
+    if (presetsStr) presets = JSON.parse(presetsStr);
+
+    presetSelect.innerHTML = '<option value="">-- 选择已保存的预设 --</option>';
+    for (const name in presets) {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        presetSelect.appendChild(opt);
+    }
+}
+
+// ==========================================
+// 2. 预设管理的交互操作
+// ==========================================
+
+// 点击【保存当前】按钮：触发起名并保存
+savePresetBtn.addEventListener('click', () => {
+    const url = apiUrlInput.value.trim();
+    const key = apiKeyInput.value.trim();
+    
+    if (!url || !key) {
+        alert("请至少填写完整的 API URL 和 API Key 再保存！");
+        return;
+    }
+
+    const presetName = prompt("为这个预设起个名字吧\n（例如：DeepSeek官方、GPT-4备用）：");
+    if (!presetName || presetName.trim() === '') return;
+
+    // 读取现有的预设合集
+    const presets = JSON.parse(localStorage.getItem('aiPresets') || '{}');
+    
+    // 把当前界面的数据打包存进去
+    presets[presetName.trim()] = {
+        baseUrl: url,
+        key: key,
+        model: modelSelect.value || '',
+        temperature: parseFloat(tempSlider.value)
+    };
+
+    localStorage.setItem('aiPresets', JSON.stringify(presets));
+    loadPresetsFromStorage(); // 刷新下拉框
+    presetSelect.value = presetName.trim(); // 自动选中刚保存的
+    
+    statusMsg.style.color = "#34C759";
+    statusMsg.textContent = `✅ 预设 "${presetName.trim()}" 保存成功！`;
+});
+
+// 在下拉框里选择预设：自动填入界面
+presetSelect.addEventListener('change', (e) => {
+    const name = e.target.value;
+    if (!name) return;
+    
+    const presets = JSON.parse(localStorage.getItem('aiPresets') || '{}');
+    const data = presets[name];
+    
+    if (data) {
+        apiUrlInput.value = data.baseUrl || '';
+        apiKeyInput.value = data.key || '';
+        
+        if (data.temperature !== undefined) {
+            tempSlider.value = data.temperature;
+            tempDisplay.textContent = parseFloat(data.temperature).toFixed(1);
+        }
+        
+        if (data.model) {
+            modelSelect.innerHTML = `<option value="${data.model}">${data.model}</option>`;
+            configSection.style.display = 'block';
+            connectBtn.textContent = "更新模型列表";
+        } else {
+            configSection.style.display = 'none';
+            connectBtn.textContent = "连接并拉取模型";
+        }
+        
+        statusMsg.style.color = "#34C759";
+        statusMsg.textContent = `已应用预设：${name}`;
+    }
+});
+
+// ==========================================
+// 3. 基础业务逻辑（温度联动、网络请求、最终锁定）
+// ==========================================
+tempSlider.addEventListener('input', (e) => {
+    tempDisplay.textContent = parseFloat(e.target.value).toFixed(1);
+});
+
+connectBtn.addEventListener('click', async () => {
+    let rawUrl = apiUrlInput.value.trim();
+    const apiKey = apiKeyInput.value.trim();
+    
+    if (!rawUrl || !apiKey) {
+        statusMsg.style.color = "#FF3B30";
+        statusMsg.textContent = "URL 和 API Key 都不能为空";
+        return;
+    }
+
+    connectBtn.disabled = true;
+    connectBtn.textContent = "正在通过网络拉取...";
+    statusMsg.textContent = "";
+
+    try {
+        if (rawUrl.endsWith('/')) rawUrl = rawUrl.slice(0, -1);
+        if (!rawUrl.endsWith('/models')) rawUrl += '/models';
+
+        const response = await fetch(rawUrl, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) throw new Error(`请求失败 (状态码: ${response.status})，请检查 URL 或 Key。`);
+        
+        const responseData = await response.json();
+        
+        let modelsArray = [];
+        if (responseData.data && Array.isArray(responseData.data)) {
+            modelsArray = responseData.data.map(m => m.id);
+        } else if (Array.isArray(responseData)) {
+            modelsArray = responseData.map(m => m.id || m); 
+        } else {
+            throw new Error("无法解析模型列表，请确认格式。");
+        }
+
+        if (modelsArray.length === 0) throw new Error("连接成功，但没有返回任何模型。");
+
+        modelsArray.sort((a, b) => a.localeCompare(b));
+        modelSelect.innerHTML = '';
+        modelsArray.forEach(modelId => {
+            const option = document.createElement('option');
+            option.value = modelId;
+            option.textContent = modelId;
+            modelSelect.appendChild(option);
+        });
+
+        statusMsg.style.color = "#34C759";
+        statusMsg.textContent = "✅ 模型拉取成功！";
+        
+        configSection.style.display = 'block';
+
+    } catch (error) {
+        statusMsg.style.color = "#FF3B30";
+        statusMsg.textContent = (error.message === 'Failed to fetch') ? "网络跨域阻拦或地址不可达。" : error.message;
+    } finally {
+        connectBtn.disabled = false;
+        connectBtn.textContent = "更新模型列表";
+    }
+});
+
+// 最终锁定并分享给别的 App
+saveBtn.addEventListener('click', () => {
+    const finalData = {
+        baseUrl: apiUrlInput.value.trim(),
+        key: apiKeyInput.value.trim(),
+        model: modelSelect.value || '',
+        temperature: parseFloat(tempSlider.value)
+    };
+    
+    // 【核心联动魔法】
+    localStorage.setItem('aiConfig', JSON.stringify(finalData));
+    
+    alert(`设置已锁定并全局保存！\n\n当前模型: ${finalData.model}\n\n现在您可以去其他 App (如资产) 呼叫 AI 刷新了！`);
+});
+
+</script>	
+</body>
+</html>

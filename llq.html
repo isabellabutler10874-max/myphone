@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>浏览器 - AI 联动版 (预加载秒开)</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+	<style>
+/* ========== Apple & Cute Design System ========== */
+:root {
+    --primary-blue: #C0D6F2;
+    --bg-color: #F2F2F7;
+    --text-main: #1C1C1E;
+    --text-gray: #8E8E93;
+    --link-blue: #007AFF;
+    --radius-sm: 16px;
+    --radius-lg: 24px;
+    --shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+    --transition-ios: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.4s ease;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100vw;
+    height: 100vh;
+    background-color: var(--bg-color);
+    overflow: hidden;
+}
+
+.iphone-frame {
+    width: 100% !important;
+    height: 100% !important;
+    background-color: var(--bg-color);
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.status-bar {
+    position: absolute; 
+    top: 14px; 
+    left: 0;
+    width: 100%; 
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 28px; box-sizing: border-box; font-size: 14px; font-weight: 600; color: var(--text-main);
+    z-index: 200; pointer-events: none;
+}
+
+.screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 60px 20px 40px 20px;
+    background-color: var(--bg-color);
+    transition: var(--transition-ios);
+    overflow-y: auto;
+}
+
+.screen-hidden-right { transform: translateX(100%); opacity: 0; pointer-events: none; }
+.screen-hidden-left { transform: translateX(-30%); opacity: 0; pointer-events: none; }
+.screen-active { transform: translateX(0); opacity: 1; pointer-events: auto; }
+
+.ui-box {
+    background-color: var(--primary-blue);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+}
+
+.search-bar {
+    display: flex;
+    align-items: center;
+    background-color: var(--primary-blue);
+    border-radius: var(--radius-lg);
+    padding: 12px 20px;
+    margin-top: 30px;
+    box-shadow: var(--shadow);
+    cursor: text;
+}
+.search-bar input {
+    border: none; background: transparent; outline: none; width: 100%; font-size: 16px; color: var(--text-main);
+}
+.search-bar input::placeholder { color: #5a7596; }
+
+#history-container {
+    display: none; margin-top: 24px; animation: fadeIn 0.3s ease;
+}
+.history-title { font-size: 14px; color: var(--text-gray); margin-left: 8px; font-weight: 600; }
+
+.history-item-wrapper { margin-bottom: 12px; }
+.history-item {
+    display: flex; justify-content: space-between; align-items: center;
+    background-color: var(--primary-blue); border-radius: var(--radius-sm);
+    padding: 14px 16px; cursor: pointer; transition: transform 0.1s;
+}
+.history-item:active { transform: scale(0.98); }
+.history-time { font-size: 12px; color: #5a7596; }
+.history-divider {
+    height: 1px; background-color: rgba(0,0,0,0.08); width: 80%; margin: 8px auto 0 auto;
+}
+
+.nav-bar { display: flex; align-items: center; margin-bottom: 20px; padding-top: 10px; }
+.back-btn { color: var(--link-blue); font-size: 16px; cursor: pointer; font-weight: 500; display: flex; align-items: center; }
+.back-btn::before { content: "‹"; font-size: 26px; margin-right: 4px; line-height: 1; margin-top: -4px; }
+
+.content-header { display: flex; justify-content: space-between; align-items: center; }
+.content-title { font-size: 18px; font-weight: bold; color: var(--text-main); }
+.content-views { font-size: 13px; color: #5a7596; background: rgba(255,255,255,0.4); padding: 4px 8px; border-radius: 10px; white-space: nowrap; margin-left: 10px; }
+.content-body { font-size: 15px; line-height: 1.6; color: var(--text-main); }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+::-webkit-scrollbar { display: none; }
+	</style>
+</head>
+
+<body>
+<div class="iphone-frame">
+    <div class="status-bar" id="status-bar">
+        <span id="clock"></span> 
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 14px;">
+            <span>📶</span>
+            <i class="fa-solid fa-wifi" style="-webkit-text-stroke: 0.5px var(--text-main);"></i>
+            <span>🔋</span>
+        </div>
+    </div>
+
+    <div id="screen-home" class="screen screen-active">
+        <div style="text-align: center; font-size: 40px; margin-top: 40px; margin-bottom: 20px;">🐻</div>
+        <h1 style="text-align: center; margin-bottom: 20px; font-weight: bold;">Safari Cute</h1>
+        
+        <div class="search-bar" onclick="showHistory()">
+            <span style="margin-right: 10px;">🔍</span>
+            <input type="text" placeholder="搜索或输入网站名称" readonly>
+        </div>
+
+        <div id="history-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-right: 10px;">
+                <div class="history-title" style="margin-bottom: 0;">最近搜索</div>
+                <div id="btn-ai-history" style="cursor: pointer; font-size: 20px; transition: transform 0.2s;" title="AI 一键预加载内容">🤖</div>
+            </div>
+            <div id="history-list"></div>
+        </div>
+    </div>
+
+    <div id="screen-content" class="screen screen-hidden-right">
+        <div class="nav-bar">
+            <div class="back-btn" onclick="goBack('screen-home', 'screen-content')">返回</div>
+        </div>
+        <div class="ui-box content-header">
+            <div class="content-title" id="c-title">加载中...</div>
+            <div class="content-views" id="c-views">👀 0</div>
+        </div>
+        <div class="ui-box">
+            <div class="content-body" id="c-body">加载中...</div>
+        </div>
+    </div>
+
+<script>
+// --- 同步真实时间 ---
+function updateAppTime() {
+    const d = new Date();
+    const clockEl = document.getElementById('clock');
+    if (clockEl) {
+        clockEl.innerText = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+}
+updateAppTime();
+setInterval(updateAppTime, 1000);
+
+// ================= 数据源与存储 =================
+let searchHistory = JSON.parse(localStorage.getItem('llq_history')) || [
+    { 
+        keyword: "什么是 Apple Design 🍎", 
+        time: "10:30",
+        full_title: "Apple Design 的核心理念与演变",
+        content: "Apple 的设计理念深深植根于“简洁就是终极的复杂”。从早期的拟物化设计 (Skeuomorphism) 到现在的扁平化和磨砂玻璃效果，它始终强调用直观的视觉语言来降低用户的学习成本。<br><br>想要体验完整的沉浸式 AI 功能，请点击主页的 🤖 按钮生成属于你的人设内容吧！"
+    },
+    { 
+        keyword: "可爱风格 CSS 教程", 
+        time: "昨天",
+        full_title: "手把手教你写出卡哇伊的网页界面",
+        content: "圆角 (border-radius)、柔和的色彩、以及轻微的阴影是可爱风格的三要素。试着将冰冷的直角变成圆润的弧线，你的网页立刻就会有了呼吸感。<br><br>这是本地默认的缓存数据，点击主页的 🤖 按钮重新生成内容。"
+    }
+];
+
+// ================= UI 渲染逻辑 =================
+function renderHistory() {
+    const container = document.getElementById('history-list');
+    container.innerHTML = searchHistory.map((item, index) => `
+        <div class="history-item-wrapper">
+            <div class="history-item" onclick="showPreloadedContent(${index})">
+                <span>${item.keyword}</span>
+                <span class="history-time">${item.time}</span>
+            </div>
+            ${index !== searchHistory.length - 1 ? '<div class="history-divider"></div>' : ''}
+        </div>
+    `).join('');
+}
+
+function showHistory() {
+    document.getElementById('history-container').style.display = 'block';
+}
+
+function showPreloadedContent(index) {
+    const data = searchHistory[index];
+    
+    if (!data.content) {
+        alert("这条是旧记录，尚未预加载正文。请点击 🤖 重新生成带有正文的记录！");
+        return;
+    }
+
+    document.getElementById('c-title').innerText = data.full_title || data.keyword;
+    document.getElementById('c-views').innerText = `👀 ${Math.floor(Math.random()*9000)+1000}`;
+    document.getElementById('c-body').innerHTML = data.content.replace(/\n/g, '<br><br>');
+
+    document.getElementById('screen-home').className = 'screen screen-hidden-left';
+    document.getElementById('screen-content').className = 'screen screen-active';
+}
+
+function goBack(targetId, currentId) {
+    document.getElementById(currentId).className = 'screen screen-hidden-right';
+    document.getElementById(targetId).className = 'screen screen-active';
+    
+    // 退回主页时，收起搜索记录保持清爽
+    if(targetId === 'screen-home') {
+         document.getElementById('history-container').style.display = 'none';
+    }
+}
+
+// ================= 🤖 AI 生成搜索记录 + 正文 (预加载) =================
+document.getElementById('btn-ai-history').addEventListener('click', async function(e) {
+    e.stopPropagation(); 
+    const configStr = localStorage.getItem('aiConfig');
+    if (!configStr) return alert("❌ 请先去主屏幕的【API】App 里连接并保存配置！");
+    const config = JSON.parse(configStr);
+
+    const rpContext = prompt(
+        "🔮 召唤 AI 一步到位预加载内容！\n你想让 AI 根据什么人设/情境生成？\n（例如：'赛博朋克黑客'、'期末复习的大学生'）", 
+        "期末复习的大学生"
+    );
+    if (!rpContext) return;
+
+    const originalText = this.innerText;
+    this.innerText = "⏳";
+    this.style.pointerEvents = "none";
+
+    const aiPrompt = `你是一个辅助角色扮演(RP)的生成器。情境：“${rpContext}”。
+请生成 4 条符合该情境的浏览器搜索记录，并且为每一条记录直接写好对应的网页正文内容。
+你必须严格且只输出如下 JSON 格式数组代码，绝对不要任何解释和Markdown标记：
+[
+  {
+    "keyword": "搜索关键词1(可以带emoji)", 
+    "time": "10:30",
+    "full_title": "点开网页后的完整大标题",
+    "content": "网页的完整正文内容。用 \\n 换行分段，字数大约200-300字，内容充实、排版清晰，完全符合该搜索词在真实网页里的语境。"
+  },
+  { "keyword": "搜索关键词2", "time": "昨天", "full_title": "...", "content": "..." },
+  { "keyword": "搜索关键词3", "time": "星期二", "full_title": "...", "content": "..." },
+  { "keyword": "搜索关键词4", "time": "2023-10-01", "full_title": "...", "content": "..." }
+]`;
+
+    try {
+        let endpoint = config.baseUrl;
+        if (endpoint.endsWith('/models')) endpoint = endpoint.replace(/\/models$/, '/chat/completions');
+        else if (!endpoint.endsWith('/chat/completions')) {
+            if (endpoint.endsWith('/')) endpoint = endpoint.slice(0, -1);
+            endpoint += '/chat/completions';
+        }
+
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${config.key}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: config.model, temperature: 0.9, messages: [{ role: "user", content: aiPrompt }] })
+        });
+
+        if (!response.ok) throw new Error("API 请求失败，状态码：" + response.status);
+        const data = await response.json();
+        let aiText = data.choices[0].message.content.replace(/```json/g, '').replace(/```/g, '').trim();
+        const result = JSON.parse(aiText);
+
+        if (Array.isArray(result)) {
+            searchHistory = result; 
+            localStorage.setItem('llq_history', JSON.stringify(searchHistory)); 
+            renderHistory();
+            alert("✅ 4 篇网页内容已全部预加载完成！点开即可秒看！");
+        } else {
+            throw new Error("返回格式不正确");
+        }
+    } catch (e) {
+        alert("AI 生成失败: " + e.message);
+    } finally {
+        this.innerText = originalText;
+        this.style.pointerEvents = "auto";
+    }
+});
+
+// 启动初始化
+renderHistory();
+</script>	
+</body>
+</html>

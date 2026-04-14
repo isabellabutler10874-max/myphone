@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>小红书 - 微信深度联动版</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+	<style>
+/* 全局变量与基础重置 */
+:root {
+    --bg-color: #F5F5F5;
+    --white: #FFFFFF;
+    --text-main: #333333;
+    --text-gray: #999999;
+    --text-light-gray: #BDBDBD;
+    --xhs-red: #FF2442;
+    --line-color: #EEEEEE;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    margin: 0 !important; padding: 0 !important; width: 100vw; height: 100vh; overflow: hidden; background-color: var(--bg-color);
+}
+
+.phone-container {
+    width: 100% !important; height: 100% !important; padding: 0 !important; border: none !important; border-radius: 0 !important; box-shadow: none !important; background: transparent; position: relative; display: flex;
+}
+
+.screen {
+    width: 100%; height: 100%; background-color: var(--bg-color); border-radius: 0 !important; overflow: hidden; position: relative;
+}
+
+.status-bar {
+    position: absolute; top: 14px; width: 100%; display: flex; justify-content: space-between; align-items: center;
+    padding: 0 28px; box-sizing: border-box; font-size: 14px; font-weight: 600; color: var(--text-main);
+    z-index: 100; pointer-events: none;
+}
+
+.nav-bar {
+    position: absolute; top: 0; width: 100%; height: 88px; padding-top: 44px; display: flex; justify-content: center; align-items: center;
+    font-size: 16px; font-weight: 600; background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 90; border-bottom: 0.5px solid var(--line-color);
+}
+
+.exit-app-btn { position: absolute; left: 20px; top: 52px; font-size: 28px; color: var(--text-main); cursor: pointer; line-height: 1; }
+.back-btn { position: absolute; left: 20px; top: 52px; font-size: 28px; color: var(--text-main); cursor: pointer; line-height: 1; display: none; }
+.ai-btn { position: absolute; right: 60px; top: 52px; font-size: 20px; cursor: pointer; transition: transform 0.1s; }
+.ai-btn:active { transform: scale(0.9); }
+.add-post-btn { position: absolute; right: 20px; top: 48px; font-size: 30px; font-weight: 300; color: var(--text-main); cursor: pointer; line-height: 1; transition: transform 0.1s; }
+.add-post-btn:active { transform: scale(0.9); }
+
+/* ================= 首页 Feed 视图 ================= */
+.feed-view {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 98px 12px 30px 12px; scrollbar-width: none;
+}
+.feed-view::-webkit-scrollbar { display: none; }
+
+.post-card {
+    background-color: var(--white); border-radius: 12px; padding: 14px; margin-bottom: 12px; cursor: pointer; transition: transform 0.1s;
+}
+.post-card:active { transform: scale(0.98); }
+
+.card-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 0.5px solid var(--line-color); }
+.author-wrap { display: flex; align-items: center; gap: 8px; }
+.author-avatar { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; background-color: #EEEEEE; border: 0.5px solid var(--line-color); }
+.author-name { font-weight: 600; font-size: 14px; color: var(--text-main); }
+.post-type { font-size: 12px; color: var(--xhs-red); background: rgba(255, 36, 66, 0.1); padding: 2px 6px; border-radius: 4px; }
+.card-body { padding: 12px 0; border-bottom: 0.5px solid var(--line-color); }
+.post-title { font-weight: bold; font-size: 15px; color: #000; margin-bottom: 6px; line-height: 1.4; }
+.post-preview { font-size: 14px; color: var(--text-gray); line-height: 1.5; }
+.card-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; font-size: 12px; color: var(--text-light-gray); }
+.action-stats { display: flex; gap: 12px; align-items: center; }
+
+/* ================= 帖子详情界面 (Detail) ================= */
+.detail-view {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: none; flex-direction: column; padding-top: 88px; background-color: var(--bg-color); z-index: 85;
+}
+.detail-scroll-area { flex: 1; overflow-y: auto; padding: 12px 12px 0 12px; scrollbar-width: none; }
+.detail-scroll-area::-webkit-scrollbar { display: none; }
+
+.detail-main-card { background-color: var(--white); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+.detail-author-box { display: flex; align-items: center; margin-bottom: 16px; }
+.detail-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 12px; background-color: #EEEEEE; border: 0.5px solid var(--line-color); }
+.detail-author-info { display: flex; flex-direction: column; }
+.detail-author-name { font-size: 15px; font-weight: 600; color: var(--text-main); margin-bottom: 4px; }
+.detail-author-meta { font-size: 12px; color: var(--text-gray); }
+
+.detail-title { font-size: 18px; font-weight: bold; color: #000; margin-bottom: 12px; line-height: 1.4; }
+.detail-text { font-size: 15px; color: var(--text-gray); line-height: 1.6; margin-bottom: 20px; white-space: pre-wrap; }
+.detail-actions-pill { display: inline-flex; align-items: center; gap: 16px; background-color: #EAEAEA; border-radius: 20px; padding: 8px 16px; font-size: 13px; color: var(--text-gray); margin-bottom: 4px; }
+
+.comments-section { background-color: var(--white); border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+.comments-header { font-size: 14px; font-weight: 600; color: var(--text-main); margin-bottom: 16px; }
+.comment-item { padding: 12px 0; border-bottom: 0.5px solid var(--line-color); }
+.comment-item:last-child { border-bottom: none; padding-bottom: 0; }
+.comment-user-info { font-size: 13px; font-weight: 500; color: var(--text-main); margin-bottom: 6px; }
+.comment-time { color: var(--text-light-gray); font-weight: normal; font-size: 11px; margin-left: 4px; }
+.comment-content { font-size: 14px; color: var(--text-gray); line-height: 1.5; margin-bottom: 8px; }
+.reply-btn { font-size: 12px; color: var(--text-main); background: #F5F5F5; padding: 4px 10px; border-radius: 12px; display: inline-block; cursor: pointer; }
+
+.bottom-comment-bar {
+    width: 100%; background-color: var(--white); padding: 10px 16px 24px 16px; border-top: 0.5px solid var(--line-color); display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+}
+.comment-input-wrapper { flex: 1; background-color: #F5F5F5; border-radius: 20px; padding: 8px 16px; display: flex; align-items: center; }
+.comment-input { width: 100%; border: none; background: transparent; outline: none; font-size: 14px; color: var(--text-main); }
+.comment-input::placeholder { color: var(--text-gray); }
+.send-btn { background-color: var(--xhs-red); color: var(--white); border: none; border-radius: 20px; padding: 8px 16px; font-size: 14px; font-weight: 500; cursor: pointer; }
+
+/* ================= 发帖界面 (Create Post) ================= */
+.post-create-view {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: none; flex-direction: column; padding-top: 88px; background-color: var(--white); z-index: 85;
+}
+.post-input-area { padding: 16px; flex: 1; overflow-y: auto; }
+.post-input-title { width: 100%; font-size: 18px; font-weight: bold; border: none; outline: none; padding-bottom: 12px; border-bottom: 0.5px solid var(--line-color); margin-bottom: 12px; }
+.post-input-title::placeholder { color: var(--text-light-gray); font-weight: normal; }
+.post-input-content { width: 100%; min-height: 180px; font-size: 15px; border: none; outline: none; resize: none; color: var(--text-main); }
+.post-input-content::placeholder { color: var(--text-light-gray); }
+.post-image-preview {
+    margin-top: 10px; padding: 12px; background-color: #F8F8F8; border-radius: 8px; font-size: 13px; color: var(--text-gray); display: none; border: 1px dashed #CCC;
+}
+.post-bottom-bar {
+    padding: 12px 16px 24px 16px; border-top: 0.5px solid var(--line-color); display: flex; justify-content: space-between; align-items: center; background-color: var(--white);
+}
+.add-img-btn {
+    font-size: 20px; color: var(--text-gray); cursor: pointer; padding: 8px; background: #F5F5F5; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; transition: background 0.2s;
+}
+.add-img-btn:active { background: #EBEBEB; }
+.publish-btn {
+    background-color: var(--xhs-red); color: var(--white); border: none; border-radius: 20px; padding: 8px 20px; font-size: 14px; font-weight: 500; cursor: pointer;
+}
+
+/* ================= 点赞组件 & 动效 ================= */
+.like-btn {
+    display: flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; transition: color 0.2s;
+}
+.like-btn .fa-heart { transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.like-btn:active .fa-heart { transform: scale(0.8); }
+.like-btn.liked { color: var(--xhs-red); }
+.like-btn.liked .fa-heart { animation: pop 0.4s ease-in-out; }
+@keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.4); } 100% { transform: scale(1); } }
+</style>
+</head>
+
+<body>
+<div class="phone-container">
+    <div class="screen">
+        <div class="status-bar" id="status-bar">
+            <span id="clock"></span> 
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 14px;">
+                <span>📶</span>
+                <i class="fa-solid fa-wifi" style="-webkit-text-stroke: 0.5px var(--text-main);"></i>
+                <span>🔋</span>
+            </div>
+        </div>
+
+        <div class="nav-bar">
+            <div class="exit-app-btn" id="exitAppBtn" onclick="if(typeof parent.closeApp === 'function') parent.closeApp()">‹</div>
+            <div class="back-btn" id="backBtn">‹</div>
+            <span id="navTitle">发现</span>
+            <div class="ai-btn" id="btn-ai-post" title="AI 生成小红书">🤖</div>
+            <div class="add-post-btn" id="btnAddPost" title="发布图文">+</div>
+        </div>
+
+        <div class="feed-view" id="feedView"></div>
+
+        <div class="detail-view" id="detailView">
+            <div class="detail-scroll-area">
+                <div class="detail-main-card">
+                    <div class="detail-author-box">
+                        <img id="detailAvatar" class="detail-avatar" src="">
+                        <div class="detail-author-info">
+                            <div class="detail-author-name" id="detailAuthor"></div>
+                            <div class="detail-author-meta" id="detailMeta"></div>
+                        </div>
+                    </div>
+                    <div class="detail-title" id="detailTitle"></div>
+                    <div class="detail-text" id="detailText"></div>
+                    <div class="detail-actions-pill" id="detailActions"></div>
+                </div>
+
+                <div class="comments-section">
+                    <div class="comments-header" id="commentsHeader"></div>
+                    <div id="commentsList"></div>
+                </div>
+            </div>
+
+            <div class="bottom-comment-bar" id="bottomBar">
+                <div class="comment-input-wrapper">
+                    <input type="text" class="comment-input" id="commentInput" placeholder="发表评论...">
+                </div>
+                <button class="send-btn" onclick="sendComment()">发送</button>
+            </div>
+        </div>
+
+        <div class="post-create-view" id="postCreateView">
+            <div class="post-input-area">
+                <input type="text" class="post-input-title" id="postInputTitle" placeholder="填写标题会有更多赞哦~">
+                <textarea class="post-input-content" id="postInputContent" placeholder="添加正文"></textarea>
+                <div class="post-image-preview" id="postImagePreview"></div>
+            </div>
+            <div class="post-bottom-bar">
+                <div class="add-img-btn" id="btnAddImg" title="添加伪装图片"><i class="fa-regular fa-image"></i></div>
+                <button class="publish-btn" onclick="publishPost()">发布</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// --- 0. 同步真实时间 ---
+function updateAppTime() {
+    const d = new Date();
+    const clockEl = document.getElementById('clock');
+    if (clockEl) {
+        clockEl.innerText = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+}
+updateAppTime();
+setInterval(updateAppTime, 1000);
+
+// --- 🌟 获取微信同步数据工具函数 (支持自己和好友) 🌟 ---
+const defaultNpcAvatar = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2RkZCIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNDAiIHI9IjIwIiBmaWxsPSIjZmZmIi8+PHBhdGggZD0iTTIwIDEwMCBWMzAgQTIwIDIwIDAgMCAxIDgwIDgwIFYxMDAiIGZpbGw9IiNmZmYiLz48L3N2Zz4=';
+
+function getWxSelf() {
+    const profile = JSON.parse(localStorage.getItem('wx_profile')) || { myName: "我" };
+    const avatar = localStorage.getItem('wx_myAvatar') || defaultNpcAvatar;
+    return { name: profile.myName, avatar: avatar };
+}
+
+function getWxFriends() {
+    return JSON.parse(localStorage.getItem('wx_friends')) || [];
+}
+
+// 核心解析函数：根据作者类型实时匹配当前数据
+function resolveAuthorInfo(post) {
+    if (post.authorType === 'self' || post.isSelf) {
+        return getWxSelf();
+    } else if (post.authorType === 'friend' && post.friendId) {
+        const friends = getWxFriends();
+        const matchedFriend = friends.find(f => f.id === post.friendId);
+        if (matchedFriend) return { name: matchedFriend.name, avatar: matchedFriend.avatar };
+        // 如果好友被删除了，退化成普通NPC名字
+        return { name: post.authorNameFallback || "失踪好友", avatar: defaultNpcAvatar };
+    }
+    // NPC 默认逻辑
+    return { name: post.authorNameFallback || post.author || "匿名薯", avatar: post.avatarFallback || defaultNpcAvatar };
+}
+
+// --- 1. 数据持久化与预设数据 ---
+let currentDetailId = null;
+let pseudoImageText = ''; 
+
+const defaultPosts = [
+    {
+        id: 1, 
+        authorType: 'npc',
+        authorNameFallback: "旅行者1号", 
+        avatarFallback: defaultNpcAvatar,
+        type: "打卡攻略", 
+        title: "周末去哪儿？这份逃离城市计划请收下",
+        fullText: "周末不想宅家？去郊外呼吸新鲜空气吧！这里有一份适合两天一夜的短途游路线，吃喝玩乐全包。第一天我们驱车前往南山风景区，满眼翠绿非常治愈。晚上的民宿一定要提前订，体验山间的清晨，绝对物超所值！",
+        date: "5月10日", 
+        dateTimeType: "5-10 14:20·打卡攻略", 
+        likes: 342, 
+        isLiked: false, 
+        commentsCount: 2,
+        comments: [
+            { user: "飞天小女警", time: "05-10 15:30", content: "这个地方看起来太棒了！" },
+            { user: "摸鱼达人", time: "05-10 16:45", content: "请问从市区过去开车大概需要多久呀？" }
+        ]
+    }
+];
+
+let postsData = JSON.parse(localStorage.getItem('xhs_posts')) || defaultPosts;
+
+function saveXhsData() {
+    localStorage.setItem('xhs_posts', JSON.stringify(postsData));
+}
+
+const feedView = document.getElementById('feedView');
+const detailView = document.getElementById('detailView');
+const postCreateView = document.getElementById('postCreateView');
+const navTitle = document.getElementById('navTitle');
+const backBtn = document.getElementById('backBtn');
+const exitAppBtn = document.getElementById('exitAppBtn');
+const commentInput = document.getElementById('commentInput');
+
+function getPreview(text) { return text.length > 30 ? text.substring(0, 30) + '...' : text; }
+
+// --- 2. 渲染主列表 Feed ---
+function renderFeed() {
+    feedView.innerHTML = '';
+
+    postsData.forEach(post => {
+        const card = document.createElement('div');
+        card.className = 'post-card';
+        card.onclick = () => openDetail(post.id);
+        
+        const heartClass = post.isLiked ? 'fa-solid fa-heart' : 'fa-regular fa-heart';
+        const likedClass = post.isLiked ? 'liked' : '';
+
+        // 🌟 动态解析当前作者的信息 (支持主角和微信好友) 🌟
+        const authorInfo = resolveAuthorInfo(post);
+
+        card.innerHTML = `
+            <div class="card-header">
+                <div class="author-wrap">
+                    <img class="author-avatar" src="${authorInfo.avatar}">
+                    <span class="author-name">${authorInfo.name}</span>
+                </div>
+                <span class="post-type">${post.type}</span>
+            </div>
+            <div class="card-body">
+                <div class="post-title">${post.title}</div>
+                <div class="post-preview">${getPreview(post.fullText)}</div>
+            </div>
+            <div class="card-footer">
+                <div class="action-stats">
+                    <div class="like-btn ${likedClass}" onclick="toggleLike(${post.id}, event)">
+                        <i class="${heartClass}"></i>
+                        <span>${post.likes}</span>
+                    </div>
+                    <div>💬 ${post.commentsCount}</div>
+                </div>
+                <span>${post.date}</span>
+            </div>
+        `;
+        feedView.appendChild(card);
+    });
+}
+
+// --- 2.5 点赞逻辑 ---
+window.toggleLike = function(postId, event) {
+    if (event) event.stopPropagation();
+
+    const post = postsData.find(p => p.id === postId);
+    if (!post) return;
+
+    post.isLiked = !post.isLiked;
+    post.likes += post.isLiked ? 1 : -1;
+    saveXhsData();
+
+    renderFeed();
+    if (currentDetailId === postId) {
+        updateDetailLikeUI(post);
+    }
+}
+
+// --- 3. 打开详情页 ---
+function openDetail(postId) {
+    const post = postsData.find(p => p.id === postId);
+    if (!post) return;
+    currentDetailId = postId;
+
+    // 🌟 详情页动态渲染头像和名字 🌟
+    const authorInfo = resolveAuthorInfo(post);
+
+    document.getElementById('detailAvatar').src = authorInfo.avatar;
+    document.getElementById('detailAuthor').innerText = authorInfo.name;
+    document.getElementById('detailMeta').innerText = post.dateTimeType;
+    document.getElementById('detailTitle').innerText = post.title;
+    document.getElementById('detailText').innerText = post.fullText;
+    
+    updateDetailLikeUI(post);
+
+    document.getElementById('commentsHeader').innerText = `全部评论·${post.commentsCount}条`;
+
+    const commentsList = document.getElementById('commentsList');
+    commentsList.innerHTML = '';
+    post.comments.forEach(c => {
+        commentsList.innerHTML += `
+            <div class="comment-item">
+                <div class="comment-user-info">${c.user}<span class="comment-time">(${c.time})</span></div>
+                <div class="comment-content">${c.content}</div>
+                <div class="reply-btn" onclick="replyTo('${c.user}')">回复</div>
+            </div>
+        `;
+    });
+
+    feedView.style.display = 'none';
+    postCreateView.style.display = 'none';
+    detailView.style.display = 'flex';
+    navTitle.innerText = '帖子详情';
+    exitAppBtn.style.display = 'none';
+    backBtn.style.display = 'block';
+}
+
+function updateDetailLikeUI(post) {
+    const heartClass = post.isLiked ? 'fa-solid fa-heart' : 'fa-regular fa-heart';
+    const likedClass = post.isLiked ? 'liked' : '';
+    document.getElementById('detailActions').innerHTML = `
+        <div class="like-btn ${likedClass}" onclick="toggleLike(${post.id}, event)">
+            <i class="${heartClass}"></i>
+            <span>${post.likes}</span>
+        </div> 
+        <div>💬 ${post.commentsCount}</div>
+    `;
+}
+
+// 全局返回逻辑
+backBtn.onclick = () => {
+    detailView.style.display = 'none';
+    postCreateView.style.display = 'none';
+    feedView.style.display = 'block';
+    navTitle.innerText = '发现';
+    exitAppBtn.style.display = 'block';
+    backBtn.style.display = 'none';
+    commentInput.value = ''; 
+    currentDetailId = null;
+    renderFeed(); // 返回时刷新列表以保证数据最新
+};
+
+// --- 4. 评论功能 ---
+function replyTo(username) {
+    commentInput.value = `@${username} `;
+    commentInput.focus();
+}
+
+function sendComment() {
+    const text = commentInput.value.trim();
+    if (text === '') return alert('评论内容不能为空哦');
+
+    const post = postsData.find(p => p.id === currentDetailId);
+    if (post) {
+        const d = new Date();
+        const timeStr = `${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        
+        const wxSelf = getWxSelf();
+        post.comments.push({ user: wxSelf.name, time: timeStr, content: text });
+        post.commentsCount += 1;
+        saveXhsData();
+        openDetail(currentDetailId); 
+    }
+    commentInput.value = '';
+}
+
+// --- 5. 🤖 AI 召唤生成小红书爆款帖子 ---
+document.getElementById('btn-ai-post').addEventListener('click', async function() {
+    const configStr = localStorage.getItem('aiConfig');
+    if (!configStr) return alert("❌ 请先去主屏幕的【API】App 里连接并保存配置！");
+    const config = JSON.parse(configStr);
+
+    const promptText = prompt("🔮 召唤 AI 生成爆款帖子！\n请输入情境（例如：'今天去了家废土风咖啡馆' 或 '赛博朋克好物推荐'）", "网红店探店踩雷");
+    if (!promptText) return;
+
+    // 🌟 询问谁是发帖人 🌟
+    const friendsList = getWxFriends();
+    const friendsNames = friendsList.length > 0 ? friendsList.map(f => f.name).join('、') : '暂无好友';
+    const authorChoice = prompt(`✍️ 请问谁是这篇帖子的作者？\n\n1. 输入【我】\n2. 输入你的微信好友名字 (${friendsNames})\n3. 留空或随便打字 (随机路人NPC)`, "");
+    
+    let targetAuthorType = 'npc';
+    let targetFriendId = null;
+
+    if (authorChoice === '我') {
+        targetAuthorType = 'self';
+    } else if (authorChoice) {
+        const matchedFriend = friendsList.find(f => f.name === authorChoice.trim());
+        if (matchedFriend) {
+            targetAuthorType = 'friend';
+            targetFriendId = matchedFriend.id;
+        }
+    }
+
+    const originalEmoji = this.innerText;
+    this.innerText = "⏳";
+    this.style.pointerEvents = "none";
+
+    const aiPrompt = `你是一个小红书爆款文案生成器。请根据情境：“${promptText}”，生成一篇带有小红书风格（文案带emoji、情绪饱满）的帖子。
+你必须严格且只输出如下 JSON 格式代码，绝对不要任何解释和Markdown语法：
+{
+  "author": "如果发帖人是随机NPC，请想一个符合设定的随机网名，否则留空即可",
+  "type": "例如: 探店避雷/好物分享/打卡攻略",
+  "title": "吸引人的爆款标题",
+  "fullText": "充满小红书风味的详细正文，多用emoji...",
+  "likes": 500,
+  "commentsCount": 1,
+  "comments": [
+    {"user": "路人甲", "content": "随机模拟一条生动的评论"}
+  ]
+}`;
+
+    try {
+        let endpoint = config.baseUrl;
+        if (endpoint.endsWith('/models')) endpoint = endpoint.replace(/\/models$/, '/chat/completions');
+        else if (!endpoint.endsWith('/chat/completions')) {
+            if (endpoint.endsWith('/')) endpoint = endpoint.slice(0, -1);
+            endpoint += '/chat/completions';
+        }
+
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${config.key}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: config.model, temperature: 0.8, messages: [{ role: "user", content: aiPrompt }] })
+        });
+
+        if (!response.ok) throw new Error("API 请求失败");
+        const data = await response.json();
+        let aiText = data.choices[0].message.content.replace(/```json/g, '').replace(/```/g, '').trim();
+        const result = JSON.parse(aiText);
+
+        const d = new Date();
+        const mm = String(d.getMonth()+1);
+        const dd = String(d.getDate());
+        const hh = String(d.getHours()).padStart(2,'0');
+        const min = String(d.getMinutes()).padStart(2,'0');
+        
+        // 组装新帖子
+        const newPost = {
+            id: Date.now(),
+            authorType: targetAuthorType, // 身份标记
+            friendId: targetFriendId,     // 好友ID绑定
+            authorNameFallback: result.author || "匿名薯", // NPC情况下的名字
+            avatarFallback: defaultNpcAvatar,
+            type: result.type || "日常分享",
+            title: result.title,
+            fullText: result.fullText,
+            date: `${mm}月${dd}日`,
+            dateTimeType: `${mm}-${dd} ${hh}:${min}·${result.type || "分享"}`,
+            likes: result.likes || Math.floor(Math.random()*1000),
+            isLiked: false,
+            commentsCount: result.commentsCount || result.comments.length || 0,
+            comments: result.comments.map(c => ({ user: c.user, time: `${mm}-${dd} ${hh}:${min}`, content: c.content })) || []
+        };
+
+        postsData.unshift(newPost); // 放到最前面
+        saveXhsData();
+        renderFeed();
+
+        alert("✅ AI 爆款已生成！");
+
+    } catch (e) {
+        alert("AI 生成失败: " + e.message);
+    } finally {
+        this.innerText = originalEmoji;
+        this.style.pointerEvents = "auto";
+    }
+});
+
+// --- 6. ➕ 手动发帖功能 ---
+document.getElementById('btnAddPost').onclick = () => {
+    feedView.style.display = 'none';
+    detailView.style.display = 'none';
+    postCreateView.style.display = 'flex';
+    navTitle.innerText = '发布图文';
+    exitAppBtn.style.display = 'none';
+    backBtn.style.display = 'block';
+
+    document.getElementById('postInputTitle').value = '';
+    document.getElementById('postInputContent').value = '';
+    document.getElementById('postImagePreview').style.display = 'none';
+    document.getElementById('postImagePreview').innerText = '';
+    pseudoImageText = '';
+};
+
+document.getElementById('btnAddImg').onclick = () => {
+    const imgDesc = prompt("📸 添加伪装图片\n请输入图片的内容描述（如：'一张赛博朋克风格的咖啡馆照片'）：", pseudoImageText);
+    if (imgDesc !== null) {
+        pseudoImageText = imgDesc.trim();
+        const preview = document.getElementById('postImagePreview');
+        if (pseudoImageText) {
+            preview.style.display = 'block';
+            preview.innerText = "[伪装图片] " + pseudoImageText;
+        } else {
+            preview.style.display = 'none';
+        }
+    }
+};
+
+function publishPost() {
+    const title = document.getElementById('postInputTitle').value.trim();
+    let content = document.getElementById('postInputContent').value.trim();
+
+    if (!title && !content) return alert("标题和正文不能都为空哦~");
+    if (pseudoImageText) content = `[图片: ${pseudoImageText}]\n\n` + content;
+
+    const d = new Date();
+    const mm = String(d.getMonth()+1);
+    const dd = String(d.getDate());
+    const hh = String(d.getHours()).padStart(2,'0');
+    const min = String(d.getMinutes()).padStart(2,'0');
+
+    const newPost = {
+        id: Date.now(),
+        authorType: 'self', // 标记自己发帖，实时跟微信挂钩
+        authorNameFallback: "我", 
+        avatarFallback: defaultNpcAvatar,
+        type: "日常分享",
+        title: title || "无标题日常",
+        fullText: content,
+        date: `${mm}月${dd}日`,
+        dateTimeType: `${mm}-${dd} ${hh}:${min}·日常分享`,
+        likes: 0,
+        isLiked: false,
+        commentsCount: 0,
+        comments: []
+    };
+
+    postsData.unshift(newPost);
+    saveXhsData();
+    renderFeed();
+
+    backBtn.click();
+}
+
+window.onload = renderFeed;
+</script>	
+</body>
+</html>

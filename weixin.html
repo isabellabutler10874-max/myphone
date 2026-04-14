@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>微信模拟器 - 融合极简与LINE风气泡</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+	<style>
+/* CSS 变量与深浅色适配 */
+:root {
+    --bg-color: #f1f1f1;
+    --nav-bg: #ededed;
+    --text-main: #191919;
+    --text-sub: #b2b2b2;
+    --border-color: #dfdfdf;
+    --chat-bg: #ffffff;
+    --system-text: #999999;
+    --modal-bg: rgba(0,0,0,0.5);
+    --panel-bg: #f5f5f5;
+    --input-bg: #fff;
+    --profile-bg: #fff;
+    --profile-card: #f9f9f9;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-color: #111111;
+        --nav-bg: #1e1e1e;
+        --text-main: #e6e6e6;
+        --text-sub: #888888;
+        --border-color: #2c2c2c;
+        --chat-bg: #111111;
+        --system-text: #666666;
+        --panel-bg: #1e1e1e;
+        --input-bg: #2c2c2c;
+        --profile-bg: #111111;
+        --profile-card: #1e1e1e;
+    }
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    overflow: hidden;
+    background-color: var(--bg-color);
+}
+
+.phone-container {
+    width: 100%; height: 100%; background-color: var(--bg-color); position: relative;
+    overflow: hidden; display: flex; flex-direction: column;
+}
+
+/* 状态栏与导航栏 */
+.status-bar {
+    height: 44px; display: flex; justify-content: space-between; align-items: center;
+    padding: 0 28px; font-size: 14px; font-weight: 600; color: var(--text-main);
+    background-color: var(--nav-bg); z-index: 100;
+}
+.view { flex: 1; display: none; flex-direction: column; background-color: var(--bg-color); height: calc(100% - 44px); position: relative; }
+.view.active { display: flex; } 
+.nav-bar {
+    height: 44px; background-color: var(--nav-bg); display: flex; justify-content: space-between; align-items: center;
+    padding: 0 15px; color: var(--text-main); font-size: 16px; font-weight: 600; border-bottom: 0.5px solid var(--border-color); flex-shrink: 0;
+}
+.nav-btn { cursor: pointer; font-size: 24px; color: var(--text-main); line-height: 1; }
+.nav-btn.blocked { color: red; }
+
+/* 聊天列表 */
+.chat-list { flex: 1; overflow-y: auto; padding-bottom: 100px; }
+.chat-item { display: flex; padding: 12px 15px; border-bottom: 0.5px solid var(--border-color); cursor: pointer; }
+.chat-item:active { background-color: var(--border-color); }
+.avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #ddd; flex-shrink: 0; }
+.chat-info { margin-left: 12px; flex: 1; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
+.chat-name { font-size: 16px; color: var(--text-main); margin-bottom: 4px; }
+.chat-msg { font-size: 13px; color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* 底部 Dock 栏 */
+.dock-container {
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 50%; max-width: 240px; 
+    height: 54px; background-color: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border-radius: 30px; 
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08); display: flex; justify-content: space-around; align-items: center; 
+    z-index: 50; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); visibility: visible; opacity: 1;
+}
+.dock-container.hidden { transform: translate(-50%, 120px) !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
+@media (prefers-color-scheme: dark) { .dock-container { background-color: rgba(44, 44, 44, 0.9); } }
+.dock-item { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 50px; }
+.dock-icon { font-size: 20px; line-height: 1; }
+.dock-text { font-size: 10px; }
+
+/* 个人主页 */
+#view-profile { background-color: var(--profile-bg); overflow-y: auto; padding-bottom: 100px; }
+.profile-cover { width: 100%; height: 300px; background-color: #e0f2f1; background-size: cover; background-position: center; position: relative; }
+.btn-change-cover { position: absolute; right: 20px; bottom: 40px; background: rgba(0,0,0,0.4); color: #fff; padding: 8px 16px; border-radius: 50px; font-size: 12px; cursor: pointer; backdrop-filter: blur(4px); }
+.profile-content { background-color: var(--profile-bg); border-radius: 30px 30px 0 0; margin-top: -30px; position: relative; padding: 0 20px 20px; display: flex; flex-direction: column; align-items: center; }
+.profile-avatar-wrap { width: 80px; height: 80px; border-radius: 50%; background-color: var(--profile-bg); padding: 4px; margin-top: -40px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); cursor: pointer; }
+.profile-avatar-wrap img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.profile-name { font-size: 24px; font-weight: bold; color: var(--text-main); margin-top: 15px; cursor: pointer; }
+.profile-tags { display: flex; gap: 10px; margin-top: 15px; }
+.profile-tag { padding: 6px 16px; border-radius: 50px; font-size: 13px; cursor: pointer; }
+.tag-dark { background-color: var(--text-main); color: var(--bg-color); }
+.tag-light { border: 1px solid var(--border-color); color: var(--text-main); }
+.profile-signature { margin-top: 25px; font-size: 14px; color: var(--text-sub); font-style: italic; cursor: pointer; }
+.profile-stats { width: 100%; display: flex; justify-content: space-between; margin-top: 30px; gap: 10px; }
+.stat-box { flex: 1; background-color: var(--profile-card); border-radius: 24px; padding: 15px 0; display: flex; flex-direction: column; align-items: center; border: 1px solid rgba(0,0,0,0.02); }
+.stat-num { font-size: 20px; font-weight: bold; color: var(--text-main); }
+.stat-label { font-size: 11px; color: var(--text-sub); margin-top: 4px; }
+.profile-menu { width: 100%; background-color: var(--profile-card); border-radius: 50px; padding: 18px 24px; margin-top: 25px; display: flex; align-items: center; color: var(--text-main); font-size: 15px; font-weight: 500; cursor: pointer; }
+.profile-menu-icon { margin-right: 15px; font-size: 20px; }
+.hidden-file-input { display: none; }
+
+/* 添加好友 */
+.add-friend-form { padding: 30px 20px; display: flex; flex-direction: column; align-items: center; }
+.avatar-preview { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; background-color: #ddd; }
+.btn-change-avatar { color: #576b95; font-size: 14px; cursor: pointer; margin-bottom: 30px; }
+.input-text { width: 100%; padding: 14px 20px; border: none; border-radius: 50px; font-size: 16px; background-color: var(--input-bg); color: var(--text-main); margin-bottom: 30px; outline: none; }
+.btn-green { width: 100%; background-color: #C0D6F2; color: #191919; border: none; padding: 14px; border-radius: 50px; font-size: 16px; font-weight: 600; cursor: pointer; }
+.btn-green:active { background-color: #A5C3E6; }
+
+/* 聊天详情及系统消息 */
+.chat-detail { background-color: var(--chat-bg); flex: 1; overflow-y: auto; padding: 15px; padding-bottom: 20px; display: flex; flex-direction: column; }
+.system-msg { width: 100%; text-align: center; font-size: 12px; color: var(--system-text); margin-bottom: 16px; line-height: 1.6; }
+.peek-link { color: #576b95; cursor: pointer; margin-left: 4px; }
+.peek-box { background-color: var(--border-color); color: #888888; font-size: 11px; padding: 8px 12px; border-radius: 12px; margin-top: 5px; text-align: left; display: inline-block; max-width: 85%; word-break: break-all; line-height: 1.4; border: 0.5px dashed var(--text-sub); }
+.error-icon { width: 20px; height: 20px; border-radius: 50%; background-color: #fa5151; color: #ffffff; font-size: 14px; font-weight: bold; display: flex; justify-content: center; align-items: center; margin-right: 8px; flex-shrink: 0; align-self: center; }
+.recall-btn { font-size: 11px; color: #576b95; cursor: pointer; margin-top: 4px; background: rgba(87, 107, 149, 0.1); padding: 4px 10px; border-radius: 50px; align-self: flex-start;}
+
+/* 聊天气泡基础样式 (LINE + iMessage 风) */
+.message-group { display: flex; flex-direction: column; gap: 4px; width: 100%; margin-bottom: 16px;}
+.message-group.received-group { align-items: flex-start; }
+.message-group.sent-group { align-items: flex-end; }
+.message-wrapper { display: flex; align-items: flex-end; gap: 6px; }
+.received-group .message-wrapper { flex-direction: row; }
+.sent-group .message-wrapper { flex-direction: row-reverse; }
+
+.message { padding: 8px 14px; font-size: 15px; max-width: 200px; width: fit-content; line-height: 1.5; border-radius: 18px; }
+.time { font-size: 11px; color: #a1a1a1; font-weight: 400; margin-bottom: 4px; white-space: nowrap; }
+
+.message.received { background-color: #f2f2f4; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border: 1px solid #d1d1d6; color: #666; font-weight: 550; border-radius: 4px 18px 18px 4px; }
+.message-wrapper:first-child .message.received { border-top-left-radius: 18px; }
+.message-wrapper:last-child .message.received { border-bottom-left-radius: 18px; }
+
+.message.sent { 
+    color: #666; 
+    font-weight: 550; 
+    border: none; 
+    background-color: hsla(0, 0%, min(96%, 90% + var(--index, 0) * 3%), 1); 
+    border-radius: 18px 4px 4px 18px; 
+}
+
+.message-wrapper:first-child .message.sent { border-top-right-radius: 18px; }
+.message-wrapper:last-child .message.sent { border-bottom-right-radius: 18px; }
+
+.status-text { font-size: 11px; color: #8e8e93; font-weight: 500; align-self: flex-end; margin-top: -2px; }
+
+/* 转账样式 (极简黑白) */
+.transfer-bubble { width: 200px; padding: 0; overflow: hidden; cursor: pointer; user-select: none; transition: transform 0.15s cubic-bezier(0.2, 0, 0.2, 1), background-color 0.3s, border-color 0.3s; }
+.transfer-bubble.received { border-radius: 4px 18px 18px 4px; }
+.transfer-bubble.sent { border-radius: 18px 4px 4px 18px; }
+.transfer-bubble:active { transform: scale(0.96); }
+
+.transfer-main { display: flex; align-items: center; padding: 14px 16px; gap: 12px; }
+.transfer-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 20px; font-weight: 600; flex-shrink: 0; transition: all 0.3s; }
+.check-icon { width: 22px; height: 22px; fill: currentColor; display: none; }
+.transfer-info { display: flex; flex-direction: column; gap: 3px; }
+.transfer-title { font-size: 16px; font-weight: 550; }
+.transfer-amount { font-size: 13px; font-weight: 400; }
+.transfer-footer { padding: 6px 16px 8px; font-size: 11px; transition: all 0.3s; }
+
+.pending { background-color: #1c1c1e; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+.pending .transfer-icon { background-color: #ffffff; color: #1c1c1e; }
+.pending .transfer-title { color: #ffffff; }
+.pending .transfer-amount { color: #999999; }
+.pending .transfer-footer { color: #888888; border-top: 1px solid rgba(255, 255, 255, 0.06); background-color: #242426; }
+
+.accepted { background-color: #f2f2f4; box-shadow: none; border: 1px solid #e5e5ea; pointer-events: none; }
+.accepted .transfer-icon { background-color: transparent; color: #b0b0b0; border: 1.5px solid #d1d1d6; }
+.accepted .transfer-icon span { display: none; }
+.accepted .transfer-icon .check-icon { display: block; }
+.accepted .transfer-title { color: #333333; }
+.accepted .transfer-amount { color: #888888; }
+.accepted .transfer-footer { color: #999999; border-top: 1px solid rgba(0, 0, 0, 0.04); background-color: #f8f8f9; }
+
+/* 🌟 淡粉风红包样式 🌟 */
+.action-bubble { width: 210px; padding: 0; overflow: hidden; cursor: pointer; user-select: none; transition: transform 0.15s cubic-bezier(0.2, 0, 0.2, 1), background-color 0.3s, border-color 0.3s; }
+.action-bubble.received { border-radius: 4px 18px 18px 4px; }
+.action-bubble.sent { border-radius: 18px 4px 4px 18px; }
+.action-bubble:active { transform: scale(0.96); }
+
+.bubble-main { display: flex; align-items: center; padding: 14px 16px; gap: 12px; }
+.bubble-icon { width: 38px; height: 38px; border-radius: 8px; display: flex; justify-content: center; align-items: center; flex-shrink: 0; transition: all 0.3s; }
+.rp-icon-svg { width: 22px; height: 22px; fill: currentColor; }
+.bubble-info { display: flex; flex-direction: column; gap: 4px; flex-grow: 1;}
+.bubble-title { font-size: 15px; font-weight: 550; line-height: 1.4; white-space: normal; overflow: visible; }
+.bubble-subtitle { font-size: 12px; font-weight: 400; display: none; } 
+.bubble-footer { padding: 6px 16px 8px; font-size: 11px; transition: all 0.3s; }
+
+.pending.red-packet { background-color: #F8CDE1; box-shadow: 0 1px 4px rgba(248, 205, 225, 0.3); }
+.pending.red-packet .bubble-icon { background-color: #FFFFFF; color: #F8CDE1; }
+.pending.red-packet .bubble-title { color: #FFFFFF; }
+.pending.red-packet .bubble-footer { color: rgba(255, 255, 255, 0.85); border-top: 1px solid rgba(255, 255, 255, 0.3); }
+
+.accepted.red-packet { background-color: #FDF1F5; box-shadow: none; border: 1px solid #F9DFE9; pointer-events: none; }
+.accepted.red-packet .bubble-icon { background-color: transparent; color: #EBB6CB; border: 1.5px solid #EBB6CB; border-radius: 50%; }
+.accepted.red-packet .bubble-icon .rp-icon-svg { display: none; }
+.accepted.red-packet .bubble-icon .check-icon { display: block; }
+.accepted.red-packet .bubble-title { color: #666666; font-size: 16px; }
+.accepted.red-packet .bubble-subtitle { display: block; color: #AAAAAA; margin-top: -2px; } 
+.accepted.red-packet .bubble-footer { color: #B0B0B0; border-top: 1px solid rgba(0, 0, 0, 0.04); }
+
+/* 🌟 动态长度语音样式 🌟 */
+.message.voice {
+    display: flex; align-items: center; gap: 8px; padding: 8px 12px; box-sizing: border-box;
+    width: calc(90px + var(--audio-len, 1) * 3.5px);
+    min-width: 95px; max-width: 250px; 
+}
+.voice-play-btn { width: 22px; height: 22px; background-color: #8e8e93; border-radius: 50%; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
+.message.sent .voice-play-btn { background-color: #7a7a7a; }
+.voice-play-btn svg { width: 10px; height: 10px; fill: #ffffff; margin-left: 2px; }
+.voice-waveform { display: flex; align-items: center; gap: 2px; flex-grow: 1; height: 16px; overflow: hidden; }
+.voice-waveform span { display: inline-block; width: 2px; background-color: #b0b0b5; border-radius: 1px; }
+.message.sent .voice-waveform span { background-color: #999999; }
+.voice-waveform span:nth-child(1) { height: 40%; }
+.voice-waveform span:nth-child(2) { height: 70%; }
+.voice-waveform span:nth-child(3) { height: 100%; }
+.voice-waveform span:nth-child(4) { height: 60%; }
+.voice-waveform span:nth-child(5) { height: 30%; }
+.voice-waveform span:nth-child(6) { height: 80%; }
+.voice-waveform span:nth-child(7) { height: 50%; }
+.voice-waveform span:nth-child(8) { height: 20%; }
+.voice-duration { font-size: 13px; font-weight: 500; color: #666; letter-spacing: 0.5px; flex-shrink: 0; }
+
+/* 底部输入面板 */
+.input-area { background-color: var(--panel-bg); border-top: 0.5px solid var(--border-color); padding: 10px 12px; padding-bottom: 25px; display: flex; align-items: center; z-index: 5; }
+.btn-plus { font-size: 28px; color: var(--text-main); cursor: pointer; margin-right: 12px; line-height: 1; }
+.chat-input { flex: 1; border: none; padding: 10px 16px; border-radius: 50px; font-size: 16px; outline: none; background-color: var(--input-bg); color: var(--text-main); }
+.btn-send { margin-left: 12px; background-color: #C0D6F2; color: #191919; border: none; padding: 10px 18px; border-radius: 50px; font-size: 14px; font-weight: bold; cursor: pointer; }
+
+/* 扩展与弹窗 */
+.ext-panel { display: none; height: 130px; background-color: var(--panel-bg); border-top: 0.5px solid var(--border-color); grid-template-columns: repeat(4, 1fr); padding: 20px; gap: 15px; padding-bottom: 30px; }
+.ext-panel.active { display: grid; }
+.ext-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+.ext-icon { width: 56px; height: 56px; background-color: var(--input-bg); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 24px; margin-bottom: 8px; color: var(--text-main); }
+.ext-text { font-size: 12px; color: var(--text-sub); }
+
+.modal { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--modal-bg); z-index: 1000; justify-content: center; align-items: center; }
+.modal.active { display: flex; }
+.modal-content { width: 80%; background-color: var(--bg-color); border-radius: 28px; padding: 24px; display: flex; flex-direction: column; gap: 15px; }
+.modal-title { font-size: 16px; font-weight: bold; color: var(--text-main); text-align: center; }
+.modal-input { padding: 12px 16px; border: 1px solid var(--border-color); border-radius: 50px; background: var(--input-bg); color: var(--text-main); font-size: 16px; outline: none;}
+.modal-btns { display: flex; gap: 10px; margin-top: 5px; }
+.modal-btns button { flex: 1; padding: 12px; border: none; border-radius: 50px; cursor: pointer; font-size: 14px; font-weight: bold;}
+.btn-cancel { background-color: var(--border-color); color: var(--text-main); }
+.btn-confirm { background-color: #C0D6F2; color: #191919; }
+.btn-confirm.orange { background-color: #f39b12; color: #fff;}
+.btn-confirm.red { background-color: #e74c3c; color: #fff;}
+
+/* 🌟 引入新功能 3：极简位置气泡样式 🌟 */
+.location-bubble {
+    width: 230px;
+    overflow: hidden;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.15s cubic-bezier(0.2, 0, 0.2, 1), box-shadow 0.3s;
+    background-color: var(--input-bg);
+    border: 0.5px solid var(--border-color);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+.location-bubble.received { border-radius: 4px 18px 18px 4px; }
+.location-bubble.sent { border-radius: 18px 4px 4px 18px; }
+.location-bubble:active { transform: scale(0.96); }
+
+.location-info {
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.location-title {
+    font-size: 15px;
+    font-weight: 550;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.location-address {
+    font-size: 11px;
+    color: var(--text-sub);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.location-map {
+    height: 75px;
+    background-color: #f8f9fa;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #ff5a5f;
+    /* 极简网格底纹模拟地图 */
+    background-image: 
+        linear-gradient(#e9ecef 1px, transparent 1px),
+        linear-gradient(90deg, #e9ecef 1px, transparent 1px);
+    background-size: 15px 15px;
+    background-position: center center;
+    border-top: 0.5px solid var(--border-color);
+}
+@media (prefers-color-scheme: dark) {
+    .location-map {
+        background-color: #1e1e1e;
+        background-image: 
+            linear-gradient(#2c2c2c 1px, transparent 1px),
+            linear-gradient(90deg, #2c2c2c 1px, transparent 1px);
+    }
+}
+.location-map svg {
+    width: 26px;
+    height: 26px;
+    fill: currentColor;
+    filter: drop-shadow(0 2px 4px rgba(255, 90, 95, 0.3));
+    transform: translateY(-2px);
+}
+	</style>
+</head>
+
+<body>
+<div class="phone-container" id="phone">
+
+    <div class="status-bar" id="status-bar">
+        <span id="clock"></span> 
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 14px;">
+            <span>📶</span>
+            <i class="fa-solid fa-wifi" style="-webkit-text-stroke: 0.5px var(--text-main);"></i>
+            <span>🔋</span>
+        </div>
+    </div>
+
+
+    <div class="view active" id="view-chatlist">
+        <div class="nav-bar">
+            <span>微信(0)</span>
+            <div class="nav-btn" onclick="navToAddFriend()">⊕</div>
+        </div>
+        <div class="chat-list" id="chat-list-container"></div>
+    </div>
+
+    <div class="view" id="view-profile">
+        <div class="profile-cover" id="ui-cover-bg">
+            <div class="btn-change-cover" onclick="document.getElementById('cover-upload').click()">📷 Change Cover</div>
+            <input type="file" id="cover-upload" class="hidden-file-input" accept="image/*" onchange="handleCoverUpload(event)">
+        </div>
+        
+        <div class="profile-content">
+            <div class="profile-avatar-wrap" onclick="document.getElementById('my-avatar-upload').click()">
+                <img src="" id="ui-my-avatar">
+            </div>
+            <input type="file" id="my-avatar-upload" class="hidden-file-input" accept="image/*" onchange="handleMyAvatarUpload(event)">
+
+            <div style="display: flex; align-items: center; justify-content: center; margin-top: 15px; gap: 10px;">
+                <div id="btn-ai-sync" style="font-size: 22px; cursor: pointer; transition: transform 0.2s;" title="AI 剧情同步">🤖</div>
+                <div class="profile-name" id="ui-my-name" onclick="openModal('edit-name')" style="margin-top: 0;">讨厌坏天气</div>
+            </div>
+
+            
+            <div class="profile-tags">
+                <div class="profile-tag tag-dark" id="ui-my-location" onclick="openModal('edit-location')">📍 Shanghai</div>
+                <div class="profile-tag tag-light">Creative Director</div>
+            </div>
+            <div class="profile-signature" id="ui-my-signature" onclick="openModal('edit-signature')">点击输入个性签名...</div>
+
+            <div class="profile-stats">
+                <div class="stat-box"><div class="stat-num" id="ui-stat-friends">0</div><div class="stat-label">好友数量</div></div>
+                <div class="stat-box"><div class="stat-num" id="ui-stat-moments">4</div><div class="stat-label">动态数量</div></div>
+                <div class="stat-box"><div class="stat-num" id="ui-stat-steps">8</div><div class="stat-label">今日步数</div></div>
+            </div>
+            <div class="profile-menu"><div class="profile-menu-icon">⭐</div><div>聊天美化</div></div>
+        </div>
+    </div>
+	
+
+    <div class="dock-container" id="bottom-dock">
+        <div class="dock-item active" id="dock-btn-chat" onclick="navToChatList()">
+            <div class="dock-icon">💬</div><div class="dock-text">聊天</div>
+        </div>
+        <div class="dock-item" id="dock-btn-profile" onclick="navToProfile()">
+            <div class="dock-icon">👤</div><div class="dock-text">个人主页</div>
+        </div>
+    </div>
+
+    <div class="view" id="view-addfriend">
+        <div class="nav-bar">
+            <div class="nav-btn" onclick="navToChatList()">‹</div>
+            <span>添加好友</span>
+            <div style="width: 24px;"></div>
+        </div>
+        <div class="add-friend-form">
+            <img src="" id="new-avatar-preview" class="avatar-preview">
+            <div class="btn-change-avatar" onclick="document.getElementById('avatar-upload').click()">点击更换好友头像</div>
+            <input type="file" id="avatar-upload" class="hidden-file-input" accept="image/*" onchange="handleAvatarUpload(event)">
+            <input type="text" id="new-friend-name" class="input-text" placeholder="输入好友名称">
+            <button class="btn-green" onclick="addFriend()">发送好友申请</button>
+        </div>
+    </div>
+
+    <div class="view" id="view-chatdetail">
+        <div class="nav-bar">
+            <div class="nav-btn" onclick="navToChatList()">‹</div>
+            <span id="chat-title">名字</span>
+            
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <div class="nav-btn" id="btn-block" onclick="toggleBlock()">⊘</div>
+                <div class="nav-btn" onclick="deleteFriend()" style="color: #fa5151; font-size: 20px;" title="删除好友">🗑️</div>
+            </div>
+        </div>
+        
+        <div class="chat-detail" id="chat-messages" onclick="hideExtPanel()"></div>
+
+        <div class="input-area">
+            <div class="btn-plus" onclick="toggleExtPanel()">⊕</div>
+            <input type="text" id="chat-input-text" class="chat-input" placeholder="" onfocus="hideExtPanel()">
+            <button class="btn-send" onclick="sendTextMessage()">发送</button>
+        </div>
+
+        <div class="ext-panel" id="ext-panel">
+            <div class="ext-item" onclick="openModal('voice')"><div class="ext-icon">🎙️</div><span class="ext-text">语音</span></div>
+            <div class="ext-item" onclick="openModal('transfer')"><div class="ext-icon" style="color:#f39b12">¥</div><span class="ext-text">转账</span></div>
+            <div class="ext-item" onclick="openModal('redpacket')"><div class="ext-icon" style="color:#e74c3c">🧧</div><span class="ext-text">红包</span></div>
+            <div class="ext-item" onclick="openModal('location')"><div class="ext-icon" style="color:#3498db">📍</div><span class="ext-text">位置</span></div>
+        </div>
+    </div>
+
+    <div class="modal" id="action-modal" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-title" id="modal-title">标题</div>
+            <div id="modal-inputs"></div>
+            <div class="modal-btns">
+                <button class="btn-cancel" onclick="closeModal()">取消</button>
+                <button class="btn-confirm" id="modal-confirm-btn" onclick="confirmModal()">确认</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// --- 全局变量与数据预设 ---
+const defaultAvatar = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2RkZCIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNDAiIHI9IjIwIiBmaWxsPSIjZmZmIi8+PHBhdGggZD0iTTIwIDEwMCBWMzAgQTIwIDIwIDAgMCAxIDgwIDgwIFYxMDAiIGZpbGw9IiNmZmYiLz48L3N2Zz4=';
+const fallbackMyAvatar = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI0MwRDZGMiIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNDAiIHI9IjIwIiBmaWxsPSIjZmZmIi8+PHBhdGggZD0iTTIwIDEwMCBWMzAgQTIwIDIwIDAgMCAxIDgwIDgwIFYxMDAiIGZpbGw9IiNmZmYiLz48L3N2Zz4=';
+
+let friends = JSON.parse(localStorage.getItem('wx_friends')) || [];
+let chats = JSON.parse(localStorage.getItem('wx_chats')) || {};
+let apiData = JSON.parse(localStorage.getItem('wx_profile')) || {
+    myName: "讨厌坏天气", myLocation: "Shanghai", mySignature: "点击输入个性签名...", moments: 4, steps: 8888  
+};
+let myAvatar = localStorage.getItem('wx_myAvatar') || fallbackMyAvatar;
+let coverBg = localStorage.getItem('wx_cover') || 'url(data:image/svg+xml;utf8,<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="%23e8f4f8"/><circle cx="80%" cy="20%" r="20" fill="%23fff" opacity="0.5"/><path d="M20 50 Q 40 30 60 50 T 100 50" stroke="%23cbdce6" fill="none" stroke-width="2"/></svg>)';
+
+let currentFriendId = null;
+let modalActionType = '';
+
+function saveData() {
+    localStorage.setItem('wx_friends', JSON.stringify(friends));
+    localStorage.setItem('wx_chats', JSON.stringify(chats));
+    localStorage.setItem('wx_profile', JSON.stringify(apiData));
+    localStorage.setItem('wx_myAvatar', myAvatar);
+    localStorage.setItem('wx_cover', coverBg);
+}
+
+window.onload = () => {
+    document.getElementById('ui-my-avatar').src = myAvatar;
+    document.getElementById('ui-cover-bg').style.backgroundImage = coverBg;
+    document.getElementById('new-avatar-preview').src = defaultAvatar;
+    updateProfileStats();
+    renderChatList();
+    saveData(); 
+};
+
+function updateWechatTime() {
+    const d = new Date();
+    const clockEl = document.getElementById('clock');
+    if (clockEl) clockEl.innerText = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+updateWechatTime(); 
+setInterval(updateWechatTime, 1000); 
+
+function switchView(viewId) {
+    document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+    document.getElementById(viewId).classList.add('active');
+    
+    const dock = document.getElementById('bottom-dock');
+    if (viewId === 'view-chatlist' || viewId === 'view-profile') dock.classList.remove('hidden');
+    else dock.classList.add('hidden');
+    
+    const statusBar = document.getElementById('status-bar');
+    if (viewId === 'view-profile') {
+        statusBar.style.backgroundColor = 'transparent';
+        statusBar.style.position = 'absolute';
+        statusBar.style.width = '100%';
+        statusBar.style.color = '#fff';
+    } else {
+        statusBar.style.backgroundColor = 'var(--nav-bg)';
+        statusBar.style.position = 'relative';
+        statusBar.style.color = 'var(--text-main)';
+    }
+}
+
+function updateDockActive(activeId) {
+    document.querySelectorAll('.dock-item').forEach(el => el.classList.remove('active'));
+    document.getElementById(activeId).classList.add('active');
+}
+
+function navToChatList() { renderChatList(); updateDockActive('dock-btn-chat'); switchView('view-chatlist'); currentFriendId = null; }
+function navToProfile() { updateProfileStats(); updateDockActive('dock-btn-profile'); switchView('view-profile'); }
+function navToAddFriend() { document.getElementById('new-friend-name').value = ''; document.getElementById('new-avatar-preview').src = defaultAvatar; switchView('view-addfriend'); }
+
+function navToChatDetail(friendId) {
+    currentFriendId = friendId;
+    const friend = friends.find(f => f.id === friendId);
+    document.getElementById('chat-title').innerText = friend.name;
+    document.getElementById('btn-block').classList.toggle('blocked', friend.isBlocked);
+    hideExtPanel();
+    renderChatMessages();
+    switchView('view-chatdetail');
+}
+
+function updateProfileStats() {
+    document.getElementById('ui-stat-friends').innerText = friends.length; 
+    document.getElementById('ui-stat-moments').innerText = apiData.moments;
+    document.getElementById('ui-stat-steps').innerText = apiData.steps;
+    document.getElementById('ui-my-name').innerText = apiData.myName;
+    document.getElementById('ui-my-location').innerText = '📍 ' + apiData.myLocation;
+    document.getElementById('ui-my-signature').innerText = apiData.mySignature;
+}
+
+function handleCoverUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            coverBg = `url(${e.target.result})`;
+            document.getElementById('ui-cover-bg').style.backgroundImage = coverBg;
+            saveData();
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function handleMyAvatarUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            myAvatar = e.target.result;
+            document.getElementById('ui-my-avatar').src = myAvatar;
+            saveData();
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function handleAvatarUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) { document.getElementById('new-avatar-preview').src = e.target.result; };
+        reader.readAsDataURL(file);
+    }
+}
+
+function addFriend() {
+    let name = document.getElementById('new-friend-name').value.trim();
+    let avatar = document.getElementById('new-avatar-preview').src;
+    if (!name) name = "未命名好友";
+    
+    const id = Date.now().toString();
+    friends.unshift({ id, name, avatar, isBlocked: false });
+    chats[id] = [{ id: Date.now() + 1, type: 'text', sender: id, content: "你好，我已经通过了你的朋友验证请求，现在我们可以开始聊天了", isRecalled: false }];
+    
+    saveData();
+    navToChatList();
+    setTimeout(() => navToChatDetail(id), 100);
+}
+
+function deleteFriend() {
+    if (confirm("确定要删除该好友并清空聊天记录吗？")) {
+        friends = friends.filter(f => f.id !== currentFriendId);
+        delete chats[currentFriendId];
+        saveData(); 
+        navToChatList();
+    }
+}
+
+function renderChatList() {
+    const container = document.getElementById('chat-list-container');
+    container.innerHTML = '';
+    document.querySelector('#view-chatlist .nav-bar span').innerText = `微信(${friends.length})`;
+
+    friends.forEach(friend => {
+        const msgs = chats[friend.id] || [];
+        const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : null;
+        let lastMsgText = '';
+        
+        if (lastMsg) {
+            if (lastMsg.isRecalled) lastMsgText = '对方撤回一条消息';
+            else if (lastMsg.type === 'text') lastMsgText = lastMsg.content;
+            else if (lastMsg.type === 'voice') lastMsgText = '[语音]';
+            else if (lastMsg.type === 'transfer' || lastMsg.type === 'transfer_receipt') lastMsgText = '[转账]';
+            else if (lastMsg.type === 'redpacket') lastMsgText = '[红包]';
+            else if (lastMsg.type === 'location') lastMsgText = '[位置]';
+        }
+
+        const item = document.createElement('div');
+        item.className = 'chat-item';
+        item.onclick = () => navToChatDetail(friend.id);
+        item.innerHTML = `<img src="${friend.avatar}" class="avatar"><div class="chat-info"><div class="chat-name">${friend.name}</div><div class="chat-msg">${lastMsgText}</div></div>`;
+        container.appendChild(item);
+    });
+}
+
+function toggleExtPanel() { document.getElementById('ext-panel').classList.toggle('active'); }
+function hideExtPanel() { document.getElementById('ext-panel').classList.remove('active'); }
+
+function toggleBlock() {
+    const friend = friends.find(f => f.id === currentFriendId);
+    friend.isBlocked = !friend.isBlocked;
+    document.getElementById('btn-block').classList.toggle('blocked', friend.isBlocked);
+    saveData();
+}
+
+function pushMessage(msgObj) {
+    const friend = friends.find(f => f.id === currentFriendId);
+    const isMeBlocked = (msgObj.sender === 'me' && friend.isBlocked);
+    if (isMeBlocked) msgObj.isError = true;
+
+    chats[currentFriendId].push(msgObj);
+    saveData(); 
+    renderChatMessages();
+
+    if (isMeBlocked) {
+        setTimeout(() => {
+            chats[currentFriendId].push({ id: Date.now() + 1, type: 'system', content: '消息已发出，但被对方拒收了。(已被对方拉黑)' });
+            saveData();
+            renderChatMessages();
+        }, 300);
+    }
+}
+
+function sendTextMessage() {
+    const input = document.getElementById('chat-input-text');
+    const text = input.value.trim();
+    if (!text) return;
+    
+    pushMessage({ id: Date.now(), type: 'text', sender: 'me', content: text, isRecalled: false });
+    input.value = '';
+    input.focus();
+}
+
+function recallMessage(msgId) {
+    const msg = chats[currentFriendId].find(m => m.id === msgId);
+    if (msg) { msg.isRecalled = true; msg.peekState = false; saveData(); renderChatMessages(); }
+}
+
+function togglePeek(msgId) {
+    const msg = chats[currentFriendId].find(m => m.id === msgId);
+    if (msg) { msg.peekState = !msg.peekState; saveData(); renderChatMessages(); }
+}
+
+function openTransfer(msgId) {
+    const msg = chats[currentFriendId].find(m => m.id === msgId);
+    if (msg && !msg.isOpened && msg.sender !== 'me') { 
+        msg.isOpened = true; 
+        chats[currentFriendId].push({ id: Date.now() + 1, type: 'transfer_receipt', sender: 'me', amount: msg.amount });
+        saveData(); 
+        renderChatMessages(); 
+    }
+}
+
+function openRedPacket(msgId) {
+    const msg = chats[currentFriendId].find(m => m.id === msgId);
+    if (msg && !msg.isOpened) { msg.isOpened = true; saveData(); renderChatMessages(); }
+}
+
+function toggleVoiceText(msgId) {
+    const msg = chats[currentFriendId].find(m => m.id === msgId);
+    if (msg) { msg.showText = !msg.showText; saveData(); renderChatMessages(); }
+}
+
+// ==== 👇 全新渲染引擎：支持分组、时间戳与极简气泡 ====
+function renderChatMessages() {
+    const container = document.getElementById('chat-messages');
+    const msgs = chats[currentFriendId] || [];
+    container.innerHTML = '';
+
+    let currentGroupType = null;
+    let groupContainer = null;
+    let sentCount = 0; 
+
+    msgs.forEach((msg, index) => {
+        if (msg.type === 'system') {
+            container.innerHTML += `<div class="system-msg">${msg.content}</div>`;
+            currentGroupType = null;
+            return;
+        }
+
+        if (msg.isRecalled) {
+            const isMe = msg.sender === 'me';
+            if (!isMe) {
+                const peekText = msg.peekState ? `<br><span class="peek-box">${msg.content}</span>` : '';
+                container.innerHTML += `<div class="system-msg">对方撤回了一条消息 <span class="peek-link" onclick="togglePeek(${msg.id})">偷看</span>${peekText}</div>`;
+            }
+            currentGroupType = null;
+            return;
+        }
+
+        const isMe = msg.sender === 'me';
+        const groupType = isMe ? 'sent-group' : 'received-group';
+
+        if (groupType !== currentGroupType) {
+            groupContainer = document.createElement('div');
+            groupContainer.className = `message-group ${groupType}`;
+            container.appendChild(groupContainer);
+            currentGroupType = groupType;
+            sentCount = 0; 
+        }
+
+        const date = new Date(msg.id);
+        const timeStr = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+        const errorHtml = msg.isError ? `<div class="error-icon">!</div>` : '';
+        let bubbleContent = '';
+
+        if (msg.type === 'text') {
+            const indexStyle = isMe ? `style="--index: ${sentCount};"` : '';
+            bubbleContent = `<div class="message ${isMe ? 'sent' : 'received'}" ${indexStyle}>${msg.content}</div>`;
+            if (isMe) sentCount++;
+        } 
+        else if (msg.type === 'transfer') {
+            const statusClass = msg.isOpened ? 'accepted' : 'pending';
+            const titleTxt = msg.isOpened ? (isMe ? '已被接收' : '已收款') : `¥ ${msg.amount}`;
+            const noteTxt = msg.isOpened ? `¥ ${msg.amount}` : (isMe ? '转账给对方' : '转账给你');
+
+            bubbleContent = `
+            <div class="transfer-bubble ${isMe ? 'sent' : 'received'} ${statusClass}" onclick="openTransfer(${msg.id})">
+                <div class="transfer-main">
+                    <div class="transfer-icon">
+                        <span>¥</span>
+                        <svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
+                    </div>
+                    <div class="transfer-info">
+                        <div class="transfer-title">${titleTxt}</div>
+                        <div class="transfer-amount">${noteTxt}</div>
+                    </div>
+                </div>
+                <div class="transfer-footer">微信转账</div>
+            </div>`;
+        } 
+        else if (msg.type === 'transfer_receipt') {
+            bubbleContent = `
+            <div class="transfer-bubble sent accepted">
+                <div class="transfer-main">
+                    <div class="transfer-icon">
+                        <svg class="check-icon" viewBox="0 0 24 24" style="display:block"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
+                    </div>
+                    <div class="transfer-info">
+                        <div class="transfer-title">已收款</div>
+                        <div class="transfer-amount">¥ ${msg.amount}</div>
+                    </div>
+                </div>
+                <div class="transfer-footer">微信转账</div>
+            </div>`;
+        }
+        else if (msg.type === 'redpacket') {
+            // 🌟 淡粉风红包渲染逻辑 🌟
+            const statusClass = msg.isOpened ? 'accepted' : 'pending';
+            // 点击后显示金额，点击前显示祝福语
+            const titleTxt = msg.isOpened ? `¥ ${msg.amount}` : (msg.note || "恭喜发财，大吉大利");
+            const subtitleDisplay = msg.isOpened ? 'block' : 'none';
+
+            bubbleContent = `
+            <div class="action-bubble red-packet ${isMe ? 'sent' : 'received'} ${statusClass}" onclick="openRedPacket(${msg.id})">
+                <div class="bubble-main">
+                    <div class="bubble-icon">
+                        <svg class="rp-icon-svg" viewBox="0 0 24 24" style="display: ${msg.isOpened ? 'none' : 'block'}">
+                            <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-.4 4.25l-7.07 4.42c-.32.2-.74.2-1.06 0L4.4 8.25c-.25-.16-.4-.43-.4-.72 0-.67.73-1.07 1.3-.72L12 11l6.7-4.19c.57-.35 1.3.05 1.3.72 0 .29-.15.56-.4.72z"/>
+                        </svg>
+                        <svg class="check-icon" viewBox="0 0 24 24" style="display: ${msg.isOpened ? 'block' : 'none'}"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
+                    </div>
+                    <div class="bubble-info">
+                        <div class="bubble-title">${titleTxt}</div>
+                        <div class="bubble-subtitle" style="display: ${subtitleDisplay}">已领取</div>
+                    </div>
+                </div>
+                <div class="bubble-footer">微信红包</div>
+            </div>`;
+        } 
+        else if (msg.type === 'voice') {
+            // 🌟 动态语音渲染逻辑 🌟
+            const indexStyle = isMe ? `style="--index: ${sentCount}; --audio-len: ${msg.duration};"` : `style="--audio-len: ${msg.duration};"`;
+            bubbleContent = `
+            <div class="message ${isMe ? 'sent' : 'received'} voice" ${indexStyle}>
+                <div class="voice-play-btn">
+                    <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </div>
+                <div class="voice-waveform">
+                    <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                </div>
+                <div class="voice-duration">${msg.duration}"</div>
+            </div>`;
+            if (isMe) sentCount++;
+        } 
+        else if (msg.type === 'location') {
+            // 🌟 极简位置气泡渲染逻辑 🌟
+            bubbleContent = `
+            <div class="location-bubble ${isMe ? 'sent' : 'received'}">
+                <div class="location-info">
+                    <div class="location-title">${msg.content}</div>
+                    <div class="location-address">查看地图</div>
+                </div>
+                <div class="location-map">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                </div>
+            </div>`;
+        }
+
+        const recallHtml = (!isMe) ? `<div class="recall-btn" onclick="recallMessage(${msg.id})">撤回</div>` : '';
+
+        // 行内合并
+        groupContainer.innerHTML += `
+        <div class="message-wrapper">
+            ${errorHtml}
+            ${bubbleContent}
+            <div class="time">${timeStr}</div>
+            ${recallHtml}
+        </div>`;
+
+        // 仅在自己发送的最后一条消息添加 "已送达"
+        if (isMe && index === msgs.length - 1) {
+            groupContainer.innerHTML += `<div class="status-text">已送达</div>`;
+        }
+    });
+
+    container.scrollTop = container.scrollHeight;
+}
+
+// --- 模态框逻辑 ---
+function openModal(type) {
+    hideExtPanel();
+    modalActionType = type;
+    const modal = document.getElementById('action-modal');
+    const title = document.getElementById('modal-title');
+    const inputs = document.getElementById('modal-inputs');
+    const confirmBtn = document.getElementById('modal-confirm-btn');
+    
+    inputs.innerHTML = '';
+    confirmBtn.className = 'btn-confirm';
+
+    if (type === 'voice') {
+        title.innerText = '模拟语音输入';
+        inputs.innerHTML = `<input type="text" id="modal-val1" class="modal-input" placeholder="输入你想说的文字...">`;
+    } else if (type === 'transfer') {
+        title.innerText = '微信转账';
+        inputs.innerHTML = `<input type="number" id="modal-val1" class="modal-input" placeholder="转账金额 (¥)"><input type="text" id="modal-val2" class="modal-input" placeholder="添加转账说明">`;
+        confirmBtn.classList.add('orange');
+    } else if (type === 'redpacket') {
+        title.innerText = '发红包';
+        inputs.innerHTML = `<input type="number" id="modal-val1" class="modal-input" placeholder="金额 (¥)"><input type="text" id="modal-val2" class="modal-input" placeholder="祝福语 (选填)">`;
+        confirmBtn.classList.add('red');
+    } else if (type === 'location') {
+        title.innerText = '发送位置';
+        inputs.innerHTML = `<input type="text" id="modal-val1" class="modal-input" placeholder="输入你的位置">`;
+    } else if (type === 'edit-name') {
+        title.innerText = '修改 ID';
+        inputs.innerHTML = `<input type="text" id="modal-val1" class="modal-input" value="${apiData.myName}">`;
+    } else if (type === 'edit-location') {
+        title.innerText = '修改地点';
+        inputs.innerHTML = `<input type="text" id="modal-val1" class="modal-input" value="${apiData.myLocation}">`;
+    } else if (type === 'edit-signature') {
+        title.innerText = '修改个性签名';
+        inputs.innerHTML = `<input type="text" id="modal-val1" class="modal-input" value="${apiData.mySignature === '点击输入个性签名...' ? '' : apiData.mySignature}" placeholder="输入新签名">`;
+    }
+
+    modal.classList.add('active');
+    setTimeout(() => document.getElementById('modal-val1')?.focus(), 100);
+}
+
+function closeModal(e) {
+    if (e && e.target.id !== 'action-modal') return;
+    document.getElementById('action-modal').classList.remove('active');
+}
+
+function confirmModal() {
+    const val1 = document.getElementById('modal-val1')?.value.trim();
+    const val2 = document.getElementById('modal-val2')?.value.trim();
+    
+    if (modalActionType === 'voice' && val1) {
+        pushMessage({ id: Date.now(), type: 'voice', sender: 'me', content: val1, duration: Math.floor(Math.random() * 10) + 2, showText: false });
+    } else if (modalActionType === 'transfer') {
+        if(!val1 || isNaN(val1)) return alert("请输入金额");
+        pushMessage({ id: Date.now(), type: 'transfer', sender: 'me', amount: parseFloat(val1).toFixed(2), note: val2, isOpened: false });
+    } else if (modalActionType === 'redpacket') {
+        if(!val1 || isNaN(val1)) return alert("请输入金额");
+        pushMessage({ id: Date.now(), type: 'redpacket', sender: 'me', amount: parseFloat(val1).toFixed(2), note: val2, isOpened: false });
+    } else if (modalActionType === 'location' && val1) {
+        pushMessage({ id: Date.now(), type: 'location', sender: 'me', content: val1 });
+    }
+    else if (modalActionType === 'edit-name' && val1) {
+        apiData.myName = val1; updateProfileStats(); saveData();
+    } else if (modalActionType === 'edit-location' && val1) {
+        apiData.myLocation = val1; updateProfileStats(); saveData();
+    } else if (modalActionType === 'edit-signature') {
+        apiData.mySignature = val1 || "点击输入个性签名..."; updateProfileStats(); saveData();
+    }
+
+    closeModal();
+}
+
+/// ================= AI 剧情联动核心逻辑 =================
+document.getElementById('btn-ai-sync').addEventListener('click', async function() {
+    const configStr = localStorage.getItem('aiConfig');
+    if (!configStr) {
+        alert("❌ 请先去主屏幕的【API】App 里连接并保存大模型配置！");
+        return;
+    }
+    const config = JSON.parse(configStr);
+
+    const rpContext = prompt(
+        "🔮 剧情联动激活！\n请告诉 AI 当前角色正在经历什么剧情？\n（例如：'被仇家追杀跑了一整夜' 或 '今天生病了一直躺在床上'）", 
+        "正常上下班的日常"
+    );
+    if (!rpContext) return;
+
+    const originalEmoji = this.innerText;
+    this.innerText = "⏳";
+    this.style.pointerEvents = "none";
+    this.style.opacity = "0.6";
+
+    const promptText = `你是一个辅助角色扮演(RP)的后台逻辑处理器。
+当前角色正在经历的剧情是：“${rpContext}”。
+请你根据这个剧情的活动强度，合理且极具真实感地推算该角色今天在微信里的【今日步数】(0 到 100000步之间)。
+同时顺便推算一下他可能发的【朋友圈动态数量】(0 到 100之间)。
+你必须严格且只输出如下 JSON 格式代码，绝对不要任何Markdown标记（如 \`\`\`json ），绝对不要解释：
+{"steps": 12500, "moments": 5}`;
+
+    try {
+        let endpoint = config.baseUrl;
+        if (endpoint.endsWith('/models')) endpoint = endpoint.replace(/\/models$/, '/chat/completions');
+        else if (!endpoint.endsWith('/chat/completions')) {
+            if (endpoint.endsWith('/')) endpoint = endpoint.slice(0, -1);
+            endpoint += '/chat/completions';
+        }
+
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${config.key}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: config.model,
+                temperature: 0.8, 
+                messages: [{ role: "user", content: promptText }]
+            })
+        });
+
+        if (!response.ok) throw new Error("API 请求失败，状态码：" + response.status);
+        const data = await response.json();
+        
+        let aiText = data.choices[0].message.content.trim();
+        aiText = aiText.replace(/```json/g, '').replace(/```/g, '').trim();
+        const result = JSON.parse(aiText);
+
+        apiData.steps = result.steps;
+        apiData.moments = result.moments;
+        
+        updateProfileStats(); 
+        saveData();           
+
+        alert(`✅ 剧情同步成功！\n根据剧情：“${rpContext}”\nAI 推算今日步数为：${result.steps} 步！`);
+
+    } catch (error) {
+        alert("AI 推算失败: " + error.message + "\n可能是模型未按格式输出，请重试。");
+    } finally {
+        this.innerText = originalEmoji;
+        this.style.pointerEvents = "auto";
+        this.style.opacity = "1";
+    }
+});
+</script>	
+</body>
+</html>

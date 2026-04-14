@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>朋友圈 - 精致极简版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+/* 1. 页面大背景 */
+body {
+    background-color: #F3F3F5; 
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, sans-serif;
+    margin: 0 !important; padding: 0 !important; width: 100vw; height: 100vh; overflow: hidden; box-sizing: border-box;
+}
+
+/* 2. 主容器 */
+.iphone-mockup {
+    width: 100% !important; height: 100% !important; background-color: #F3F3F5;
+    position: relative; overflow: hidden; display: flex; flex-direction: column;
+}
+
+/* iPhone 顶部状态栏 */
+.status-bar {
+    position: absolute; top: 14px; width: 100%; display: flex; justify-content: space-between; align-items: center;
+    padding: 0 28px; box-sizing: border-box; font-size: 14px; font-weight: 600; color: #FFFFFF;
+    z-index: 100; pointer-events: none; text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+/* 顶部操作导航栏：新增左侧返回，重塑右侧加号 */
+.top-nav-bar {
+    position: absolute; top: 45px; width: 100%; padding: 0 20px; box-sizing: border-box;
+    display: flex; justify-content: space-between; align-items: center; z-index: 102;
+}
+
+.btn-nav {
+    font-size: 22px; color: #FFFFFF; cursor: pointer;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.4); transition: opacity 0.2s;
+    -webkit-text-stroke: 1px transparent; /* 保持图标锐利 */
+}
+/* 强制加号更粗一点 */
+.fa-plus { font-weight: 900 !important; }
+.btn-nav:active { opacity: 0.6; }
+
+/* 内部内容滚动区 */
+.app-content { flex: 1; overflow-y: auto; padding-bottom: 50px; scroll-behavior: smooth; }
+.app-content::-webkit-scrollbar { display: none; }
+
+/* 朋友圈顶部封面图 */
+.moments-cover-area { position: relative; width: 100%; height: 300px; margin-bottom: 40px; cursor: pointer; }
+.cover-img { width: 100%; height: 100%; object-fit: cover; }
+.my-profile { position: absolute; right: 16px; bottom: -20px; display: flex; align-items: flex-start; gap: 12px; }
+
+/* 名字和机器人容器 */
+.name-container { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.my-name { color: #FFFFFF; font-size: 18px; font-weight: bold; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+.btn-ai { font-size: 24px; cursor: pointer; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4)); transition: transform 0.2s;}
+.btn-ai:active { transform: scale(0.9); }
+
+.my-avatar { width: 64px; height: 64px; border-radius: 8px; border: 2px solid #FFFFFF; background-color: #FFF; object-fit: cover; }
+
+/* 帖子列表容器 */
+.post-list { padding: 0 16px; }
+
+/* 朋友圈外层包裹 */
+.post-card { background-color: #FFFFFF; border-radius: 12px; padding: 16px; margin-bottom: 20px; box-shadow: 0 1px 5px rgba(0,0,0,0.05); }
+.post-header { display: flex; align-items: center; margin-bottom: 12px; }
+.avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; margin-right: 12px; border: 0.5px solid #eee;}
+.user-info { display: flex; flex-direction: column; }
+.nickname { font-size: 16px; color: #576B95; font-weight: bold; margin-bottom: 4px; }
+.time { font-size: 12px; color: #B2B2B2; }
+.post-content { font-size: 15px; line-height: 1.5; color: #333; margin-bottom: 12px; word-wrap: break-word; }
+
+/* 脑补图片展示区 */
+.simulated-image-display {
+    background-color: #F3F3F5; border-radius: 8px; padding: 25px 15px; margin-top: 10px; margin-bottom: 10px;
+    text-align: center; color: #576B95; font-size: 14px; border: 1px dashed #C0D6F2;
+}
+
+/* 操作区 */
+.post-actions { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 13px; }
+.action-btn { 
+    cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;
+    background-color: #F0F0F0; color: #576B95; padding: 6px 12px; border-radius: 20px; font-weight: 500;
+}
+.action-btn:active { opacity: 0.7; }
+.delete-btn { color: #FA5151; margin-left: auto; } 
+
+/* 互动区 */
+.interaction-area { background-color: #F3F3F5; border-radius: 6px; padding: 8px 10px; margin-bottom: 12px; font-size: 14px; }
+.likes-list { color: #576B95; font-weight: bold; margin-bottom: 6px; display: flex; }
+.likes-list.hidden { display: none; }
+.likes-list::before { content: "🤍 "; margin-right: 4px; font-weight: normal; }
+.divider { height: 1px; background-color: #E2E2E2; margin: 6px 0; }
+.divider.hidden { display: none; }
+.comments-list { display: flex; flex-direction: column; gap: 4px; }
+.comment-item { line-height: 1.4; cursor: pointer; padding: 2px 0; }
+.comment-item:active { background-color: #E5E5E5; border-radius: 4px; }
+.comment-name { color: #576B95; font-weight: bold; }
+.reply-text { color: #333; font-weight: normal; margin: 0 2px; }
+.comment-text { color: #333; }
+
+/* 评论输入框 */
+.comment-input-area { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.comment-input { 
+    flex: 1; padding: 8px 14px; border: 1px solid #C0D6F2; border-radius: 20px; 
+    font-size: 14px; outline: none; background-color: #FFFFFF; 
+}
+.send-btn { background-color: #FFFFFF; color: #576B95; border: 1px solid #C0D6F2; border-radius: 20px; padding: 8px 16px; font-size: 14px; cursor: pointer; font-weight: bold; }
+
+/* 发表朋友圈界面 */
+.publish-view {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: #FFFFFF; z-index: 200; display: none; flex-direction: column;
+}
+.publish-view.active { display: flex; }
+.publish-nav {
+    height: 60px; padding: 0 15px; margin-top: 30px; border-bottom: 0.5px solid #EEEEEE;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.publish-cancel { font-size: 16px; color: #191919; cursor: pointer; }
+.publish-send { 
+    background-color: #FFFFFF; color: #576B95; font-size: 14px; font-weight: bold;
+    border: 1px solid #C0D6F2; border-radius: 20px; padding: 6px 16px; cursor: pointer;
+}
+.publish-body { padding: 15px; flex: 1; display: flex; flex-direction: column; }
+.publish-textarea { width: 100%; height: 120px; border: none; font-size: 16px; outline: none; resize: none; margin-bottom: 15px; line-height: 1.5; }
+.publish-img-box { background-color: #F3F3F5; border-radius: 12px; padding: 20px 15px; border: 1px dashed #C0D6F2; text-align: center; }
+.publish-img-input { width: 100%; border: none; background: transparent; font-size: 15px; outline: none; text-align: center; color: #576B95; margin-top: 10px; }
+    </style>
+</head>
+
+<body>
+<div class="iphone-mockup">
+    <div class="status-bar" id="status-bar">
+        <span id="clock"></span>
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 14px;">
+            <span>📶</span>
+            <i class="fa-solid fa-wifi" style="-webkit-text-stroke: 0.5px #ffffff;"></i>
+            <span>🔋</span>
+        </div>
+    </div>
+    
+    <div class="top-nav-bar">
+        <div class="btn-nav" onclick="history.back()" title="返回">
+            <i class="fa-solid fa-chevron-left"></i>
+        </div>
+        <div class="btn-nav" onclick="openPublishView()" title="发表朋友圈">
+            <i class="fa-solid fa-plus"></i>
+        </div>
+    </div>
+
+    <div class="app-content">
+        <div class="moments-cover-area" onclick="document.getElementById('cover-upload').click()">
+            <img class="cover-img" id="ui-cover-img" src="https://images.unsplash.com/photo-1506744626753-eda8151a74a4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80">
+            <input type="file" id="cover-upload" style="display:none;" accept="image/*" onchange="handleCoverUpload(event)">
+            
+            <div class="my-profile">
+                <div class="name-container">
+                    <div id="btn-ai-post" class="btn-ai" title="召唤 Char 发朋友圈" onclick="event.stopPropagation();">🤖</div>
+                    <span class="my-name" id="ui-sync-name">我</span>
+                </div>
+                <img class="my-avatar" id="ui-sync-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Me" onclick="event.stopPropagation();">
+            </div>
+        </div>
+
+        <div class="post-list" id="post-list-container">
+            <div class="post-card" id="default-hint" style="text-align: center; color: #999; padding: 40px 10px;">
+                点击右上角的 + 发表你的动态<br>或者点击 🤖 召唤剧情里的角色发朋友圈吧！
+            </div>
+        </div>
+    </div>
+    
+    <div class="publish-view" id="publish-view">
+        <div class="publish-nav">
+            <div class="publish-cancel" onclick="closePublishView()">取消</div>
+            <button class="publish-send" onclick="submitMyPost()">发表</button>
+        </div>
+        <div class="publish-body">
+            <textarea class="publish-textarea" id="publish-text" placeholder="这一刻的想法..."></textarea>
+            <div class="publish-img-box">
+                <div style="font-size: 24px; color: #C0D6F2;">📷</div>
+                <input type="text" class="publish-img-input" id="publish-img-desc" placeholder="点击输入文字描述图片内容 (AI 识别用)">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// --- 时间更新 ---
+function updateAppTime() {
+    const d = new Date();
+    const clockEl = document.getElementById('clock');
+    if (clockEl) {
+        clockEl.innerText = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+}
+updateAppTime();
+setInterval(updateAppTime, 1000);
+
+// --- 数据同步与加载 ---
+let myWxName = "我"; 
+function syncWechatProfile() {
+    const wxProfileStr = localStorage.getItem('wx_profile');
+    const wxAvatar = localStorage.getItem('wx_myAvatar');
+    if (wxProfileStr) {
+        const pData = JSON.parse(wxProfileStr);
+        if (pData.myName) {
+            myWxName = pData.myName;
+            document.getElementById('ui-sync-name').innerText = myWxName;
+        }
+    }
+    if (wxAvatar) { document.getElementById('ui-sync-avatar').src = wxAvatar; }
+}
+
+function loadPyqData() {
+    const savedHtml = localStorage.getItem('pyq_html_content');
+    const container = document.getElementById('post-list-container');
+    if (savedHtml && savedHtml.trim().length > 10) { container.innerHTML = savedHtml; }
+    const savedCover = localStorage.getItem('pyq_cover_bg');
+    if (savedCover) { document.getElementById('ui-cover-img').src = savedCover; }
+}
+
+function savePyqData() {
+    const container = document.getElementById('post-list-container');
+    localStorage.setItem('pyq_html_content', container.innerHTML);
+}
+
+function handleCoverUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('ui-cover-img').src = e.target.result;
+            localStorage.setItem('pyq_cover_bg', e.target.result); 
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+syncWechatProfile();
+loadPyqData();
+
+// --- 发表动态逻辑 ---
+function openPublishView() { document.getElementById('publish-view').classList.add('active'); }
+function closePublishView() {
+    document.getElementById('publish-view').classList.remove('active');
+    document.getElementById('publish-text').value = '';
+    document.getElementById('publish-img-desc').value = '';
+}
+
+function submitMyPost() {
+    const textContent = document.getElementById('publish-text').value.trim();
+    const imgDesc = document.getElementById('publish-img-desc').value.trim();
+    if (!textContent && !imgDesc) { alert("说点什么吧！"); return; }
+
+    const avatarSrc = document.getElementById('ui-sync-avatar').src;
+    let imgHtml = imgDesc ? `<div class="simulated-image-display">📷 包含一张图片：<br>"${imgDesc}"</div>` : '';
+
+    const newPostHtml = `
+        <div class="post-card">
+            <div class="post-header">
+                <img class="avatar" src="${avatarSrc}">
+                <div class="user-info">
+                    <span class="nickname">${myWxName}</span>
+                    <span class="time">刚刚</span>
+                </div>
+            </div>
+            <div class="post-content">${textContent}</div>
+            ${imgHtml}
+            <div class="post-actions">
+                <div class="action-btn like-btn">🤍 <span class="like-count">0</span></div>
+                <div class="action-btn comment-btn">💬 <span class="comment-count">0</span></div>
+                <div class="action-btn delete-btn">🗑️ 删除</div>
+            </div>
+            <div class="interaction-area">
+                <div class="likes-list hidden"><span class="liker-names"></span></div>
+                <div class="divider hidden"></div>
+                <div class="comments-list"></div>
+            </div>
+            <div class="comment-input-area">
+                <input type="text" class="comment-input" placeholder="发表评论...">
+                <button class="send-btn">发送</button>
+            </div>
+        </div>`;
+
+    const container = document.getElementById('post-list-container');
+    const hint = document.getElementById('default-hint');
+    if (hint) hint.remove();
+    container.insertAdjacentHTML('afterbegin', newPostHtml);
+    savePyqData(); 
+    closePublishView();
+}
+
+// --- AI 召唤 ---
+document.getElementById('btn-ai-post').addEventListener('click', async function() {
+    const configStr = localStorage.getItem('aiConfig');
+    if (!configStr) return alert("❌ 请先去 API App 配置连接！");
+    const config = JSON.parse(configStr);
+    const promptText = prompt("🔮 召唤谁发动态？", "傲娇大小姐抱怨今天天气太热");
+    if (!promptText) return;
+
+    const originalEmoji = this.innerText;
+    this.innerText = "⏳";
+    this.style.pointerEvents = "none";
+
+    const aiPrompt = `生成朋友圈动态JSON：{"author": "名字", "avatar_seed": "头像词", "content": "正文", "time": "刚刚"}。背景：${promptText}`;
+
+    try {
+        let endpoint = config.baseUrl;
+        if (!endpoint.endsWith('/chat/completions')) endpoint = endpoint.replace(/\/$/, '') + '/chat/completions';
+
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${config.key}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: config.model, messages: [{ role: "user", content: aiPrompt }] })
+        });
+
+        const data = await response.json();
+        let aiText = data.choices[0].message.content.replace(/```json|```/g, '').trim();
+        const result = JSON.parse(aiText);
+
+        const newPostHtml = `
+            <div class="post-card">
+                <div class="post-header">
+                    <img class="avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=${result.avatar_seed}">
+                    <div class="user-info">
+                        <span class="nickname">${result.author}</span>
+                        <span class="time">${result.time}</span>
+                    </div>
+                </div>
+                <div class="post-content">${result.content}</div>
+                <div class="post-actions">
+                    <div class="action-btn like-btn">🤍 <span class="like-count">0</span></div>
+                    <div class="action-btn comment-btn">💬 <span class="comment-count">0</span></div>
+                    <div class="action-btn delete-btn">🗑️ 删除</div>
+                </div>
+                <div class="interaction-area">
+                    <div class="likes-list hidden"><span class="liker-names"></span></div>
+                    <div class="divider hidden"></div>
+                    <div class="comments-list"></div>
+                </div>
+                <div class="comment-input-area">
+                    <input type="text" class="comment-input" placeholder="发表评论...">
+                    <button class="send-btn">发送</button>
+                </div>
+            </div>`;
+
+        document.getElementById('post-list-container').insertAdjacentHTML('afterbegin', newPostHtml);
+        savePyqData(); 
+    } catch (e) { alert("失败: " + e.message); } 
+    finally { this.innerText = originalEmoji; this.style.pointerEvents = "auto"; }
+});
+
+// --- 交互 (点赞、删除、评论) ---
+document.querySelector('.app-content').addEventListener('click', function(e) {
+    const postCard = e.target.closest('.post-card');
+    if (!postCard) return;
+
+    if (e.target.closest('.like-btn')) {
+        const likeBtn = postCard.querySelector('.like-btn');
+        const countSpan = postCard.querySelector('.like-count');
+        const list = postCard.querySelector('.likes-list');
+        const names = postCard.querySelector('.liker-names');
+        const isLiked = likeBtn.innerHTML.includes('❤️');
+        let count = parseInt(countSpan.innerText);
+
+        if (!isLiked) {
+            likeBtn.innerHTML = `❤️ <span class="like-count">${count + 1}</span>`;
+            list.classList.remove('hidden');
+            names.innerText = names.innerText ? names.innerText + '、' + myWxName : myWxName;
+        } else {
+            likeBtn.innerHTML = `🤍 <span class="like-count">${count - 1}</span>`;
+            let arr = names.innerText.split('、').filter(n => n !== myWxName);
+            names.innerText = arr.join('、');
+            if (!arr.length) list.classList.add('hidden');
+        }
+        savePyqData();
+    }
+
+    if (e.target.closest('.delete-btn')) {
+        if(confirm("确定删除？")) { postCard.remove(); savePyqData(); }
+    }
+
+    if (e.target.closest('.send-btn')) {
+        const input = postCard.querySelector('.comment-input');
+        if (!input.value.trim()) return;
+        const list = postCard.querySelector('.comments-list');
+        const item = document.createElement('div');
+        item.className = 'comment-item';
+        item.innerHTML = `<span class="comment-name">${myWxName}：</span><span class="comment-text">${input.value}</span>`;
+        list.appendChild(item);
+        input.value = "";
+        savePyqData();
+    }
+});
+</script>	
+</body>
+</html>

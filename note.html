@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>日记 - 完美对齐互动版</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+	<style>
+/* ================= 全局与变量 ================= */
+:root {
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-round: 50%;
+    --theme-green: #5bc266;
+    --bg-color: #f2f2f6;
+    --text-main: #111111;
+    --text-gray: #888888;
+    --dark-blue: #1C3B70; /* 专门调的深蓝色 */
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* 强制撑满全屏，取消原来的居中模拟器 */
+body {
+    background-color: var(--bg-color);
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.app-container {
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-color);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 视图切换机制 */
+.view { display: none; flex-direction: column; height: 100%; width: 100%; background-color: var(--bg-color); }
+.view.active { display: flex; }
+
+/* ================= 像素级对齐的状态栏 ================= */
+.status-bar {
+    position: absolute; top: 14px; left: 0; width: 100%; 
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 28px; box-sizing: border-box; font-size: 14px; font-weight: 600; color: var(--text-main);
+    z-index: 200; pointer-events: none;
+}
+
+/* ================= 导航栏 ================= */
+.top-nav, .detail-nav, .compose-header {
+    background-color: #ffffff;
+    height: 88px;
+    padding: 44px 20px 10px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 0.5px solid #e0e0e0; flex-shrink: 0;
+}
+
+/* 返回键风格 */
+.back-btn { font-size: 32px; color: #666; cursor: pointer; line-height: 0.8; }
+.back-btn:active { opacity: 0.5; }
+
+.top-nav .logo { font-size: 20px; font-weight: 800; color: #333; flex: 1; margin-left: 15px;}
+.top-nav .logo span { font-weight: 400; font-size: 18px; }
+.detail-nav .nav-title { flex: 1; text-align: center; font-size: 17px; font-weight: bold; color: var(--text-main); }
+
+.nav-actions i { font-size: 20px; color: #666; margin-left: 15px; cursor: pointer; }
+
+/* ================= 滚动内容区 ================= */
+.scroll-content { flex: 1; overflow-y: auto; padding: 12px; }
+.scroll-content::-webkit-scrollbar { display: none; }
+
+.write-btn {
+    background-color: #fff; padding: 12px 15px; display: flex; align-items: center; margin-bottom: 12px;
+    color: #999; font-size: 16px; border-radius: var(--radius-lg); cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+/* ================= 卡片样式 (圆角) ================= */
+.card {
+    background-color: #fff; margin-bottom: 12px; padding: 18px; border-radius: var(--radius-lg);
+    cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+.detail-view .card { cursor: default; margin-bottom: 0; border-radius: 0; min-height: 100%; }
+
+/* 用户信息 */
+.user-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.user-info-left { display: flex; align-items: center; }
+.avatar { width: 40px; height: 40px; border-radius: var(--radius-round); object-fit: cover; margin-right: 10px; background-color: #ddd; border: 0.5px solid #eee;}
+.user-name-box { display: flex; flex-direction: column; }
+.user-name { font-weight: bold; font-size: 15px; color: #000; }
+.user-handle { font-size: 13px; color: #999; }
+.meta-right { text-align: right; font-size: 12px; color: #999; line-height: 1.4; }
+
+/* 正文内容 */
+.content-text { font-size: 16px; color: #111; line-height: 1.6; margin-bottom: 12px; word-wrap: break-word; }
+.detail-view .content-text { font-size: 22px; font-weight: bold; margin-bottom: 8px;}
+
+/* 卡片底部操作栏 (主页互动区) */
+.card-footer { display: flex; justify-content: flex-end; align-items: center; color: #b0b0b0; font-size: 13px; }
+.action-span { margin-left: 20px; display: flex; align-items: center; cursor: pointer; transition: color 0.2s; }
+.action-span i { margin-right: 5px; font-size: 15px; transition: transform 0.2s; }
+.action-span.liked { color: #ff4d4f; }
+.action-span.liked i { color: #ff4d4f; animation: heartBeat 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.action-span.commenting { color: var(--dark-blue); }
+.action-span.commenting i { color: var(--dark-blue); }
+.card-footer span.time-span { margin-left: 20px; display: flex; align-items: center; }
+.card-footer span.time-span i { margin-right: 5px; }
+
+/* ================= 详情页专属互动区 ================= */
+.detail-time { font-size: 12px; color: #b0b0b0; margin-bottom: 20px; display: flex; align-items: center; gap: 4px; }
+.action-buttons { display: flex; justify-content: space-between; border-top: 0.5px solid #f0f0f0; border-bottom: 0.5px solid #f0f0f0; padding: 12px 0; margin-bottom: 15px; }
+.action-btn { flex: 1; text-align: center; color: var(--text-gray); font-size: 14px; background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.action-btn i { margin-right: 6px; font-size: 16px; }
+.action-btn:nth-child(2) { border-left: 0.5px solid #f0f0f0; border-right: none; } /* 改成两个按钮后只保留左边框 */
+
+@keyframes heartBeat {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.4); }
+    100% { transform: scale(1); }
+}
+.action-btn.liked { color: #ff4d4f; } 
+.action-btn.liked i { color: #ff4d4f; animation: heartBeat 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+.likes-section { display: flex; align-items: center; font-size: 14px; margin-bottom: 15px; }
+.likes-section i { color: #b0b0b0; margin-right: 8px; }
+.likes-section .like-names { color: var(--dark-blue); font-weight: bold; } /* 👈 深蓝色 */
+
+/* 评论区 */
+.comments-header { font-size: 13px; color: #999; margin-bottom: 15px; display: flex; align-items: center; }
+.comments-header i { margin-right: 6px; }
+.comment-item { display: flex; margin-bottom: 20px; cursor: pointer; } 
+.comment-item:active { opacity: 0.7; }
+.comment-item .avatar { width: 36px; height: 36px; }
+.comment-content { flex: 1; border-bottom: 0.5px solid #f5f5f5; padding-bottom: 15px; position: relative;}
+.comment-top { display: flex; justify-content: space-between; margin-bottom: 5px; align-items: center; }
+.comment-top .name { font-size: 14px; font-weight: bold; color: #111; }
+.comment-top .time { font-size: 11px; color: #b0b0b0; position: absolute; right: 0; top: 0;}
+.comment-text { font-size: 15px; color: #333; line-height: 1.5; }
+
+/* 详情底部输入框 */
+.bottom-input-bar { background-color: #f9f9f9; padding: 10px 15px 25px 15px; border-top: 0.5px solid #e0e0e0; display: flex; align-items: center; }
+.bottom-input-bar input { flex: 1; height: 38px; border: 1px solid #e0e0e0; border-radius: 4px; padding: 0 12px; font-size: 14px; outline: none; background-color: #fff; color: var(--text-main);}
+.bottom-input-bar button { margin-left: 12px; height: 38px; background-color: var(--theme-green); color: white; border: none; border-radius: 4px; padding: 0 18px; font-size: 14px; cursor: pointer; font-weight: bold;}
+
+/* ================= 发布界面 (Compose View) ================= */
+#compose-view { background-color: #fff; }
+.compose-body { flex: 1; display: flex; flex-direction: column; padding: 15px; overflow-y: auto; }
+.compose-textarea { flex: 1; border: none; outline: none; resize: none; font-size: 16px; line-height: 1.5; color: #333; margin-bottom: 10px; min-height: 150px; }
+.compose-textarea::placeholder { color: #ccc; }
+
+.compose-footer { border-top: 0.5px solid #f0f0f0; padding: 10px 15px 30px 15px; display: flex; justify-content: space-between; align-items: center; background: #fafafa; }
+.compose-tools i { font-size: 24px; color: #8ba2c9; margin-right: 15px; cursor: pointer; vertical-align: middle;}
+.compose-actions { display: flex; align-items: center; }
+.privacy-btn { color: #999; font-size: 14px; background: none; border: none; margin-right: 15px; cursor: pointer; display: flex; align-items: center; }
+.send-btn { background-color: var(--theme-green); color: white; border: none; border-radius: var(--radius-sm); padding: 8px 20px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center;}
+</style>
+</head>
+
+<body>
+<div class="app-container">
+    
+    <div class="status-bar" id="status-bar">
+        <span id="clock"></span> 
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 14px;">
+            <span>📶</span>
+            <i class="fa-solid fa-wifi" style="-webkit-text-stroke: 0.5px var(--text-main);"></i>
+            <span>🔋</span>
+        </div>
+    </div>
+
+    <div id="feed-view" class="view active">
+        <div class="top-nav">
+            <div class="back-btn" onclick="if(typeof parent.closeApp === 'function') parent.closeApp()">‹</div>
+            <div class="logo">icity <span>· 我的日记</span></div>
+            <div class="nav-actions">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <i class="fa-solid fa-robot" id="btn-ai-post" style="margin-left: 12px;" title="AI 自动写日记"></i>
+            </div>
+        </div>
+
+        <div class="scroll-content">
+            <div class="write-btn" onclick="openCompose()">
+                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=MySelf" class="avatar" alt="avatar" style="width: 32px; height: 32px;">
+                写点什么
+            </div>
+
+            <div id="feed-list"></div>
+        </div>
+    </div>
+
+    <div id="detail-view" class="view detail-view">
+        <div class="detail-nav">
+            <div class="back-btn" onclick="goHome()">‹</div>
+            <span class="nav-title" id="detail-nav-title">日记</span>
+            <div style="width: 24px;"></div>
+        </div>
+
+        <div class="scroll-content" id="detail-scroll-content" style="padding: 0; background-color: #fff;">
+            </div>
+
+        <div class="bottom-input-bar">
+            <input type="text" id="comment-input" placeholder="我要评论" onkeypress="handleKeyPress(event)">
+            <button onclick="postComment()"><i class="fa-solid fa-paper-plane"></i> 发送</button>
+        </div>
+    </div>
+
+    <div id="compose-view" class="view">
+        <div class="compose-header">
+            <div class="back-btn" onclick="goHome()">‹</div>
+            <span class="nav-title">写日记</span>
+            <div style="width: 24px;"></div>
+        </div>
+
+        <div class="compose-body">
+            <textarea class="compose-textarea" id="post-text" placeholder="写点什么吧"></textarea>
+        </div>
+
+        <div class="compose-footer">
+            <div class="compose-tools">
+                <i class="fa-solid fa-camera"></i>
+                <i class="fa-solid fa-location-dot"></i>
+            </div>
+            <div class="compose-actions">
+                <button class="privacy-btn" id="privacy-toggle" onclick="togglePrivacy()">
+                    <i class="fa-solid fa-lock"></i> 私密
+                </button>
+                <button class="send-btn" onclick="publishPost()">
+                    <i class="fa-solid fa-paper-plane"></i> 发送
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// --- 同步真实时间 ---
+function updateAppTime() {
+    const d = new Date();
+    const clockEl = document.getElementById('clock');
+    if (clockEl) {
+        clockEl.innerText = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+}
+updateAppTime(); 
+setInterval(updateAppTime, 1000);
+
+const currentUserName = "MySelf"; 
+const currentUserAvatar = "https://api.dicebear.com/7.x/bottts/svg?seed=MySelf";
+
+// --- 核心数据层 (LocalStorage 持久化) ---
+let currentDetailId = null;
+
+const defaultNoteData = [
+    {
+        id: 1, author: "punktater", handle: "@punktater", avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=punktater",
+        dateTop: "3月30日 · 星期一<br>2026", text: "我又梦到我人格分裂了我真的好想死",
+        timeFull: "2026-03-30 12:49", timeShort: "12:49",
+        likes: ["Michelle"], 
+        comments: [
+            { user: "punktater", avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=punktater", time: "2星期前", content: "数不清多少次了" },
+            { user: "Michelle", avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=michelle", time: "2星期前", content: "嗯" }
+        ]
+    },
+    {
+        id: 2, author: "punktater", handle: "@punktater", avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=punktater",
+        dateTop: "3月24日<br>2026", text: "怀着必死之心的意志应该就能拥有一切了吧",
+        timeFull: "2026-03-24 14:40", timeShort: "14:40",
+        likes: [], comments: []
+    }
+];
+
+let noteData = JSON.parse(localStorage.getItem('note_posts')) || defaultNoteData;
+
+function saveNoteData() {
+    localStorage.setItem('note_posts', JSON.stringify(noteData));
+}
+
+// --- 删除日记功能 ---
+function deletePost(id) {
+    if (confirm("确定要删除这篇日记吗？")) {
+        noteData = noteData.filter(p => p.id !== id);
+        saveNoteData();
+        goHome(); // 删除后自动退回主页，并重新渲染
+    }
+}
+
+// --- 渲染主页 Feed ---
+function renderFeed() {
+    const container = document.getElementById('feed-list');
+    container.innerHTML = noteData.map(post => {
+        const isLiked = post.likes.includes(currentUserName);
+        const heartIcon = isLiked ? 'fa-solid fa-heart' : 'fa-regular fa-heart';
+        const likeCount = post.likes.length > 0 ? post.likes.length : '';
+        const commentCount = post.comments.length > 0 ? post.comments.length : '';
+
+        return `
+        <div class="card" onclick="openDetail(${post.id})">
+            <div class="user-header">
+                <div class="user-info-left">
+                    <img src="${post.avatar}" class="avatar" alt="avatar">
+                    <div class="user-name-box">
+                        <span class="user-name">${post.author}</span>
+                        <span class="user-handle">${post.handle}</span>
+                    </div>
+                </div>
+                <div class="meta-right">${post.dateTop}</div>
+            </div>
+            <div class="content-text">${post.text}</div>
+            <div class="card-footer">
+                <span class="action-span ${isLiked ? 'liked' : ''}" onclick="toggleFeedLike(event, ${post.id})">
+                    <i class="${heartIcon}"></i> ${likeCount}
+                </span>
+                <span class="action-span" onclick="handleFeedComment(event, ${post.id})">
+                    <i class="fa-regular fa-comment"></i> ${commentCount}
+                </span>
+                <span class="time-span"><i class="fa-regular fa-clock"></i> ${post.timeShort}</span>
+            </div>
+        </div>
+        `;
+    }).join('');
+}
+
+// --- 主页互动逻辑 ---
+function toggleFeedLike(e, id) {
+    e.stopPropagation(); // 阻止进入详情页
+    const post = noteData.find(p => p.id === id);
+    if (!post) return;
+
+    const idx = post.likes.indexOf(currentUserName);
+    const span = e.currentTarget;
+    const icon = span.querySelector('i');
+    
+    // 重置动画
+    icon.style.animation = 'none';
+    icon.offsetHeight; 
+
+    if (idx > -1) {
+        post.likes.splice(idx, 1);
+        span.classList.remove('liked');
+        icon.className = 'fa-regular fa-heart';
+    } else {
+        post.likes.push(currentUserName);
+        span.classList.add('liked');
+        icon.className = 'fa-solid fa-heart';
+        icon.style.animation = 'heartBeat 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+    }
+    
+    span.innerHTML = `<i class="${icon.className}" style="${icon.style.cssText}"></i> ${post.likes.length > 0 ? post.likes.length : ''}`;
+    saveNoteData();
+    // 如果详情页此时开着，也同步更新一下
+    if (currentDetailId === id) renderDetail(id);
+}
+
+function handleFeedComment(e, id) {
+    e.stopPropagation(); // 阻止进入详情页的默认行为
+    const span = e.currentTarget;
+    const icon = span.querySelector('i');
+    
+    // 瞬间变深蓝色
+    span.classList.add('commenting');
+    icon.classList.remove('fa-regular');
+    icon.classList.add('fa-solid');
+
+    // 延迟 0.2 秒跳转，营造交互感
+    setTimeout(() => {
+        span.classList.remove('commenting');
+        icon.classList.remove('fa-solid');
+        icon.classList.add('fa-regular');
+        openDetail(id);
+        
+        // 自动聚焦到底部输入框
+        setTimeout(() => {
+            document.getElementById('comment-input').focus();
+        }, 100);
+    }, 200);
+}
+
+
+// --- 视图切换与详情页渲染 ---
+function hideAllViews() {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+}
+
+function goHome() {
+    hideAllViews();
+    renderFeed(); // 返回时刷新列表以保证数据最新
+    document.getElementById('feed-view').classList.add('active');
+    currentDetailId = null;
+}
+
+function openDetail(id) {
+    currentDetailId = id;
+    renderDetail(id);
+    hideAllViews();
+    document.getElementById('detail-view').classList.add('active');
+}
+
+function renderDetail(id) {
+    const post = noteData.find(p => p.id === id);
+    if (!post) return;
+
+    document.getElementById('detail-nav-title').innerText = `${post.author} · 日记`;
+    const container = document.getElementById('detail-scroll-content');
+    
+    const isLiked = post.likes.includes(currentUserName);
+    const heartClass = isLiked ? 'fa-solid fa-heart' : 'fa-regular fa-heart';
+    const likedClass = isLiked ? 'liked' : '';
+    
+    const likesHtml = post.likes.length > 0 ? `
+        <div class="likes-section">
+            <i class="fa-regular fa-heart"></i>
+            <span class="like-names">${post.likes.join(', ')}</span>
+        </div>` : '';
+
+    const commentsHtml = post.comments.map(c => `
+        <div class="comment-item" onclick="replyToUser('${c.user}')">
+            <img src="${c.avatar}" class="avatar" alt="avatar">
+            <div class="comment-content">
+                <div class="comment-top">
+                    <span class="name">${c.user}</span>
+                    <span class="time"><i class="fa-regular fa-clock"></i> ${c.time}</span>
+                </div>
+                <div class="comment-text">${c.content}</div>
+            </div>
+        </div>
+    `).join('');
+
+    container.innerHTML = `
+        <div class="card">
+            <div class="user-header" style="margin-bottom: 20px;">
+                <div class="user-info-left">
+                    <img src="${post.avatar}" class="avatar" alt="avatar">
+                    <div class="user-name-box">
+                        <span class="user-name">${post.author}</span>
+                        <span class="user-handle">${post.handle}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-text">${post.text}</div>
+            <div class="detail-time"><i class="fa-regular fa-clock"></i> ${post.timeFull}</div>
+
+            <div class="action-buttons">
+                <button class="action-btn ${likedClass}" onclick="toggleDetailLike(${post.id}, this)">
+                    <i class="${heartClass}"></i> <span>喜欢</span>
+                </button>
+                <button class="action-btn" style="color: #fa5151;" onclick="deletePost(${post.id})">
+                    <i class="fa-regular fa-trash-can"></i> <span>删除</span>
+                </button>
+            </div>
+
+            ${likesHtml}
+
+            <div class="comments-header">
+                <i class="fa-regular fa-comment"></i> <span>${post.comments.length}</span> 条评论
+            </div>
+            
+            <div id="comment-list">
+                ${commentsHtml}
+            </div>
+            <div style="height: 20px;"></div>
+        </div>
+    `;
+}
+
+function toggleDetailLike(id, btnEl) {
+    const post = noteData.find(p => p.id === id);
+    const idx = post.likes.indexOf(currentUserName);
+    
+    if (idx > -1) {
+        post.likes.splice(idx, 1);
+    } else {
+        post.likes.push(currentUserName);
+    }
+    saveNoteData();
+    renderDetail(id); // 重新渲染详情即可更新动画和UI
+}
+
+// --- 详情页：评论逻辑 (@回复) ---
+function replyToUser(username) {
+    const inputEl = document.getElementById('comment-input');
+    inputEl.value = `@${username} `;
+    inputEl.focus();
+}
+
+function postComment() {
+    const inputEl = document.getElementById('comment-input');
+    let text = inputEl.value.trim();
+    if (!text) return alert("请输入评论内容");
+
+    // 高亮 @
+    text = text.replace(/@(\S+)/g, '<span style="color:var(--dark-blue);">@$1</span>');
+
+    const post = noteData.find(p => p.id === currentDetailId);
+    if(post) {
+        post.comments.push({
+            user: currentUserName,
+            avatar: currentUserAvatar,
+            time: "刚刚",
+            content: text
+        });
+        saveNoteData();
+        renderDetail(currentDetailId);
+        
+        inputEl.value = '';
+        setTimeout(() => {
+            const scrollBox = document.querySelector('#detail-scroll-content');
+            scrollBox.scrollTop = scrollBox.scrollHeight;
+        }, 50);
+    }
+}
+
+function handleKeyPress(e) { if (e.key === "Enter") postComment(); }
+
+// --- 发布页 (Compose) 逻辑 ---
+function openCompose() {
+    hideAllViews();
+    document.getElementById('compose-view').classList.add('active');
+    document.getElementById('post-text').focus();
+}
+
+let isPrivate = true;
+function togglePrivacy() {
+    isPrivate = !isPrivate;
+    const btn = document.getElementById('privacy-toggle');
+    btn.innerHTML = isPrivate ? '<i class="fa-solid fa-lock"></i> 私密' : '<i class="fa-solid fa-globe"></i> 公开';
+}
+
+function publishPost() {
+    const text = document.getElementById('post-text').value.trim();
+    if (!text) return alert("写点什么吧");
+
+    const d = new Date();
+    const mm = String(d.getMonth()+1);
+    const dd = String(d.getDate());
+    const hh = String(d.getHours()).padStart(2,'0');
+    const min = String(d.getMinutes()).padStart(2,'0');
+    const days = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+
+    const newPost = {
+        id: Date.now(),
+        author: currentUserName,
+        handle: "@myself",
+        avatar: currentUserAvatar,
+        dateTop: `${mm}月${dd}日 · ${days[d.getDay()]}<br>${d.getFullYear()}`,
+        text: text.replace(/\n/g, '<br>'),
+        timeFull: `${d.getFullYear()}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')} ${hh}:${min}`,
+        timeShort: `${hh}:${min}`,
+        likes: [],
+        comments: []
+    };
+
+    noteData.unshift(newPost);
+    saveNoteData();
+
+    document.getElementById('post-text').value = '';
+    isPrivate = false; togglePrivacy(); 
+    goHome();
+}
+
+// ================= 🤖 AI 生成日记 =================
+document.getElementById('btn-ai-post').addEventListener('click', async function() {
+    const configStr = localStorage.getItem('aiConfig');
+    if (!configStr) return alert("❌ 请先去主屏幕的【API】App 里连接并保存配置！");
+    const config = JSON.parse(configStr);
+
+    const promptText = prompt("🔮 召唤 AI 写日记！\n请输入情境（例如：'今天雨下得好大，不想上班' 或 '被前任发短信骚扰了'）", "失眠的凌晨三点");
+    if (!promptText) return;
+
+    const originalClass = this.className;
+    this.className = "fa-solid fa-hourglass-half";
+    this.style.pointerEvents = "none";
+
+    const aiPrompt = `你是一个辅助角色扮演(RP)的日记生成器。请根据情境：“${promptText}”，生成一篇符合该设定、带有较强情绪感（比如忧郁、暴躁、或者日常感）的日记。
+你必须严格且只输出如下 JSON 格式代码，绝对不要任何解释和Markdown语法：
+{
+  "author": "给角色想一个文艺的英文名",
+  "handle": "@加上对应的ID",
+  "text": "日记正文，尽量写得有画面感或情绪感",
+  "likes": ["路人甲", "Michelle"],
+  "comments": [
+    {"user": "路人甲", "time": "刚刚", "content": "模拟一条朋友关心的评论"}
+  ]
+}`;
+
+    try {
+        let endpoint = config.baseUrl;
+        if (endpoint.endsWith('/models')) endpoint = endpoint.replace(/\/models$/, '/chat/completions');
+        else if (!endpoint.endsWith('/chat/completions')) {
+            if (endpoint.endsWith('/')) endpoint = endpoint.slice(0, -1);
+            endpoint += '/chat/completions';
+        }
+
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${config.key}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: config.model, temperature: 0.9, messages: [{ role: "user", content: aiPrompt }] })
+        });
+
+        if (!response.ok) throw new Error("API 请求失败");
+        const data = await response.json();
+        let aiText = data.choices[0].message.content.replace(/```json/g, '').replace(/```/g, '').trim();
+        const result = JSON.parse(aiText);
+
+        const d = new Date();
+        const days = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+        const hh = String(d.getHours()).padStart(2,'0');
+        const min = String(d.getMinutes()).padStart(2,'0');
+
+        const newPost = {
+            id: Date.now(),
+            author: result.author || "Unknown",
+            handle: result.handle || "@unknown",
+            avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${result.author}`,
+            dateTop: `${d.getMonth()+1}月${d.getDate()}日 · ${days[d.getDay()]}<br>${d.getFullYear()}`,
+            text: result.text,
+            timeFull: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${hh}:${min}`,
+            timeShort: `${hh}:${min}`,
+            likes: result.likes || [],
+            comments: (result.comments || []).map(c => ({ user: c.user, avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${c.user}`, time: c.time, content: c.content }))
+        };
+
+        noteData.unshift(newPost);
+        saveNoteData();
+        renderFeed();
+        alert("✅ AI 日记已更新！");
+
+    } catch (e) {
+        alert("AI 生成失败: " + e.message);
+    } finally {
+        this.className = originalClass;
+        this.style.pointerEvents = "auto";
+    }
+});
+
+// 初始化渲染
+window.onload = renderFeed;
+</script>	
+</body>
+</html>

@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>untitled</title>
+	<!-- 引入 Font Awesome 6 用于应用图标 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 引入外部 CSS 样式表 -->
+    <link rel="stylesheet" href="style.css">
+	<style>/* =========================================
+   全局重置与苹果风格字体设置
+   ========================================= */* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    /* 优先调用 iOS 系统加粗字体 */
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #1c1c1e; /* 网页背景，深色模式 */
+    padding: 20px;
+}
+
+/* =========================================
+   手机容器样式 (Phone Container)
+   ========================================= */
+.iphone {
+    position: relative;
+    width: 390px;
+    /* 画面比例 3:5 */
+    aspect-ratio: 3 / 5;
+    max-width: 100%;
+    
+    /* === 替换这里的壁纸代码 === */
+    background-image: url('https://i.postimg.cc/KvNGSyyZ/IMG-8349.jpg');
+    background-size: cover; /* 让图片等比例缩放并填满整个手机屏幕 */
+    background-position: center; /* 确保图片居中显示 */
+    background-repeat: no-repeat; /* 防止图片重复平铺 */
+    /* ========================= */
+    
+    border-radius: 45px;
+    border: 12px solid #000;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), inset 0 0 0 2px rgba(255,255,255,0.1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+
+/* 顶部灵动岛/刘海占位 (Apple Design Detail) */
+.dynamic-island {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 110px;
+    height: 32px;
+    background-color: #000;
+    border-radius: 20px;
+    z-index: 50;
+}
+
+/* =========================================
+   状态栏 (Status Bar)
+   ========================================= */
+.status-bar {
+    position: relative;
+    z-index: 40;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 28px 0 28px;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600; /* iOS 加粗字体 */
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.status-bar .icons {
+    display: flex;
+    align-items: center;
+}
+
+/* 统一状态栏右侧图标与Emoji的间距和大小 */
+.status-bar .icons i, 
+.status-bar .icons span {
+    margin-left: 6px;
+    font-size: 14px;
+}
+
+/* 为 wifi 图标添加文字描边以实现加粗效果 */
+.bold-wifi {
+    -webkit-text-stroke: 0.8px #ffffff; 
+}
+
+/* =========================================
+   主屏图标区 (Main Screen Grid)
+   ========================================= */
+.home-screen {
+    flex-grow: 1;
+    padding: 40px 25px 20px 25px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 100px);
+    gap: 25px 15px; /* 行间距与列间距 */
+    align-content: start;
+}
+
+.app-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+}
+
+.app-item:active {
+    transform: scale(0.9); /* 点击缩放交互 */
+}
+
+/* 苹果拟物风格圆角方形图标 (Squircle) */
+.app-icon {
+    width: 62px;
+    height: 62px;
+    border-radius: 16px; /* 约22%的圆角以接近苹果平滑圆角 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 30px;
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.app-name {
+    margin-top: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    letter-spacing: 0.5px;
+}
+
+/* 各应用的专属背景渐变色 */
+.bg-wechat  { background: linear-gradient(180deg, #10d36b, #07c160); }
+.bg-moments { background: linear-gradient(180deg, #5fc3fa, #1e90ff); }
+.bg-diary   { background: linear-gradient(180deg, #ffe066, #ffcc00); }
+.bg-assets  { background: linear-gradient(180deg, #ffad33, #ff8c00); }
+.bg-forum   { background: linear-gradient(180deg, #a75df8, #8a2be2); }
+.bg-weibo   { background: linear-gradient(180deg, #ff4d64, #e6162d); }
+.bg-settings{ background: linear-gradient(180deg, #a0a4aa, #727880); }
+.bg-api     { background: linear-gradient(180deg, #30d0c1, #00ced1); }
+.bg-theme   { background: linear-gradient(180deg, #ff85c2, #ff69b4); }
+
+/* =========================================
+   底部 Dock 栏 (毛玻璃效果)
+   ========================================= */
+.dock {
+    margin: 0 15px 35px 15px; /* 底部留白给 Home 条 */
+    height: 90px;
+    background: rgba(255, 255, 255, 0.2);
+    /* Apple 毛玻璃核心属性 */
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border-radius: 30px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255,255,255,0.1); /* 边缘高光 */
+}
+
+.dock .app-item .app-name {
+    display: none; /* iOS 规范：Dock 栏内的图标不显示文字 */
+}
+
+.bg-phone    { background: linear-gradient(180deg, #52d667, #34c759); }
+.bg-contacts { background: linear-gradient(180deg, #b0b4b8, #8e8e93); }
+.bg-browser  { background: linear-gradient(180deg, #34aadc, #007aff); }
+
+/* =========================================
+   底部 Home 指示条 (Home Indicator)
+   ========================================= */
+.home-indicator-area {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 35px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    z-index: 50;
+}
+
+.home-bar {
+    width: 135px;
+    height: 5px;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    transition: background 0.2s;
+}
+
+.home-indicator-area:hover .home-bar {
+    background: #e0e0e0;
+}
+	</style>
+</head>
+
+<body>
+   <!-- 手机卡片容器 -->
+    <div class="iphone">
+        
+        <!-- 灵动岛 (装饰用) -->
+        <div class="dynamic-island"></div>
+
+        <!-- 顶部状态栏 -->
+		                <div class="status-bar">
+            <div class="time" id="sys-clock">09:41</div> <div class="icons">
+                <span>📶</span>
+                <i class="fa-solid fa-wifi bold-wifi"></i>
+                <span>🔋</span>
+            </div>
+        </div>
+
+
+
+        <!-- 主屏幕应用图标区 (3x3 Grid) -->
+        <div class="home-screen">
+            <!-- 第一行 -->
+			<div class="app-item" onclick="openApp('weixin.html')" style="cursor: pointer;">
+    <div class="app-icon" style="background: #ffffff; overflow: hidden; display: flex; justify-content: center; align-items: center;">
+        <img src="https://i.postimg.cc/L53NQ5Pk/IMG-8340.jpg" 
+             style="width: 100%; height: 100%; object-fit: cover; border-radius: 16px;">
+    </div>
+    <div class="app-name">微信</div>
+</div>
+
+
+<div class="app-item" onclick="openApp('pyq.html')" style="cursor: pointer;">
+    <div class="app-icon" style="background: #ffffff; overflow: hidden; display: flex; justify-content: center; align-items: center;">
+        <img src="https://i.postimg.cc/50G4r9wr/IMG-8350.jpg"
+             style="width: 100%; height: 100%; object-fit: cover; border-radius: 16px;">
+    </div>
+    <div class="app-name">朋友圈</div>
+</div>
+
+
+            <div class="app-item" onclick="openApp('note.html')" style="cursor: pointer;">
+    <div class="app-icon" style="background: #ffffff; overflow: hidden; display: flex; justify-content: center; align-items: center;">
+        <img src="https://i.postimg.cc/3rDxzpdd/IMG-8345.jpg" 
+             style="width: 100%; height: 100%; object-fit: cover; border-radius: 16px;">
+    </div>
+    <div class="app-name">日记</div>
+</div>
+
+
+            <!-- 第二行 -->
+            <div class="app-item" onclick="openApp('zichan.html')" style="cursor: pointer;">
+    <div class="app-icon" style="background: #ffffff; overflow: hidden; display: flex; justify-content: center; align-items: center;">
+        <img src="https://i.postimg.cc/gc56Zm6K/IMG-8346.jpg"
+             style="width: 100%; height: 100%; object-fit: cover; border-radius: 16px;">
+    </div>
+    <div class="app-name">资产</div>
+</div>
+
+
+<div class="app-item" onclick="openApp('xhs.html')" style="cursor: pointer;">
+    <div class="app-icon" style="background: #ffffff; overflow: hidden; display: flex; justify-content: center; align-items: center;">
+        <img src="https://i.postimg.cc/QMCqDs9h/IMG-8353.jpg"
+             style="width: 100%; height: 100%; object-fit: cover; border-radius: 16px;">
+    </div>
+    <div class="app-name">小红书</div>
+</div>
+
+            <div class="app-item">
+                <div class="app-icon bg-weibo"><i class="fa-brands fa-weibo"></i></div>
+                <div class="app-name">微博</div>
+            </div>
+
+            <!-- 第三行 -->
+            <div class="app-item">
+                <div class="app-icon bg-settings"><i class="fa-solid fa-gear"></i></div>
+                <div class="app-name">设置</div>
+            </div>
+            <div class="app-item" onclick="openApp('api.html')" style="cursor: pointer;">
+    <div class="app-icon" style="background: #ffffff; overflow: hidden; display: flex; justify-content: center; align-items: center;">
+        <img src="https://i.postimg.cc/ydQ4d7nj/IMG-8354.jpg"
+             style="width: 100%; height: 100%; object-fit: cover; border-radius: 16px;">
+    </div>
+    <div class="app-name">API</div>
+</div>
+
+            <div class="app-item">
+                <div class="app-icon bg-theme"><i class="fa-solid fa-palette"></i></div>
+                <div class="app-name">主题</div>
+            </div>
+        </div>
+
+        <!-- 底部 Dock 栏 -->
+        <div class="dock">
+            <div class="app-item">
+                <div class="app-icon bg-phone"><i class="fa-solid fa-phone"></i></div>
+                <div class="app-name">电话</div>
+            </div>
+            <div class="app-item">
+                <div class="app-icon bg-contacts"><i class="fa-solid fa-address-book"></i></div>
+                <div class="app-name">通讯录</div>
+            </div>
+            <div class="app-item" onclick="openApp('llq.html')" style="cursor: pointer;">
+    <div class="app-icon" style="background: #ffffff; overflow: hidden; display: flex; justify-content: center; align-items: center;">
+        <img src="https://i.postimg.cc/0Q6x7gLW/IMG-8347.jpg"
+             style="width: 100%; height: 100%; object-fit: cover; border-radius: 16px;">
+    </div>
+    <div class="app-name">浏览器</div>
+</div>
+
+        </div>
+
+        <!-- 底部 Home 指示条 -->
+       <div class="home-indicator-area" id="homeIndicator" title="返回桌面" onclick="closeApp()" style="cursor: pointer;position: absolute; z-index: 10000; bottom: 0; width: 100%;">
+            <div class="home-bar"></div>
+        </div>
+
+        <div id="app-window" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999;">
+            <iframe id="app-screen" src="" style="width: 100%; height: 100%; border: none;"></iframe>
+        </div>
+        </div>
+
+
+    </div>
+	
+
+    <!-- 引入外部 JavaScript -->
+    <script>// 等待 DOM 树完全加载完成后再绑定事件
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // 获取底部 Home 指示条元素
+    const homeIndicator = document.getElementById('homeIndicator');
+    
+    // 如果元素存在，则绑定点击事件
+    if (homeIndicator) {
+        homeIndicator.addEventListener('click', () => {
+            // 触发浏览器返回上一页的动作
+            history.back();
+        });
+    }
+
+});
+
+    // 当你点击微信图标时，运行这段代码
+    function openApp(targetHtml) {
+        // 1. 找到显示器
+        var windowContainer = document.getElementById('app-window');
+        var screenFrame = document.getElementById('app-screen');
+        
+        // 2. 把 weixin.html 塞进显示器
+        screenFrame.src = targetHtml;
+        
+        // 3. 让隐藏的显示器现身！
+        windowContainer.style.display = 'block';
+    }
+
+    // 当你点击“返回桌面”时，运行这段代码
+    function closeApp() {
+        var windowContainer = document.getElementById('app-window');
+        var screenFrame = document.getElementById('app-screen');
+        
+        // 1. 隐藏显示器
+        windowContainer.style.display = 'none';
+        
+        // 2. 清空画面（拔掉插头）
+        screenFrame.src = '';
+    }
+	    // 动态更新主界面(桌面)的时间
+    function updateSystemTime() {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const sysClock = document.getElementById('sys-clock');
+        if (sysClock) sysClock.innerText = `${hours}:${minutes}`;
+    }
+    // 每秒跳动一次，并立刻执行一次初始化
+    setInterval(updateSystemTime, 1000);
+    updateSystemTime();
+
+	
+</script>
+
+
+</body>
+</html>
