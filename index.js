@@ -1,75 +1,80 @@
 // ================================================================
-//  虚拟手机扩展 - 悬浮球 + 无边框可拖动手机 (内嵌 rphone.html)
+//  虚拟手机扩展 - 纯透明可拖动窗口 + 始终可见悬浮球
 // ================================================================
 
 const IS_TOUCH_DEVICE = window.matchMedia('(hover: none) and (pointer: coarse)').matches
                      || /Android|iPhone|iPod/i.test(navigator.userAgent);
 
-// 样式：悬浮球 + 透明手机容器 + 拖动把手
+// 极简样式：悬浮球 + 完全透明的手机容器 + 透明拖动把手
 const CSS = `
-/* 悬浮球 - 强制右下角定位 */
+/* 悬浮球 - 强制右下角，无视任何 transform */
 #rp-fab {
-  position: fixed;
-  right: 20px;
-  bottom: 20px;
-  z-index: 2147483647;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.95);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(0,0,0,0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px;
-  overflow: hidden;
-  cursor: grab;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
-  transition: transform 0.15s;
-  user-select: none;
-  touch-action: none;
+  position: fixed !important;
+  right: 20px !important;
+  bottom: 20px !important;
+  left: auto !important;
+  top: auto !important;
+  z-index: 2147483647 !important;
+  width: 52px !important;
+  height: 52px !important;
+  border-radius: 50% !important;
+  background: rgba(255,255,255,0.95) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(0,0,0,0.1) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 6px !important;
+  overflow: hidden !important;
+  cursor: grab !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.18) !important;
+  transition: transform 0.15s !important;
+  user-select: none !important;
+  touch-action: none !important;
 }
-#rp-fab:hover { transform: scale(1.1); }
-#rp-fab svg { width: 100%; height: 100%; display: block; }
+#rp-fab:hover { transform: scale(1.1) !important; }
+#rp-fab svg { width: 100% !important; height: 100% !important; display: block !important; }
 
-/* 手机容器 - 完全透明，无边框 */
+/* 手机容器 - 完全透明，无背景，无边框，无阴影 */
 #rp-phone-host {
-  position: fixed;
-  z-index: 10000;
+  position: fixed !important;
+  z-index: 10000 !important;
   width: 390px;
   height: 650px;
   display: none;
-  background: transparent;
-  pointer-events: none; /* 让点击穿透到 iframe，但拖动把手除外 */
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  pointer-events: none;
 }
 
-/* iframe 填满容器 */
+/* iframe 填满，背景透明 */
 #rp-phone-iframe {
-  width: 100%;
-  height: 100%;
-  border: none;
-  background: transparent;
-  pointer-events: auto; /* iframe 内部可交互 */
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
+  background: transparent !important;
+  pointer-events: auto;
 }
 
-/* 透明拖动把手 - 覆盖在灵动岛区域 */
+/* 透明拖动把手 - 覆盖灵动岛区域 */
 #rp-drag-handle {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 50px;        /* 覆盖灵动岛及状态栏区域 */
-  cursor: move;
-  pointer-events: auto; /* 可拖动 */
-  background: transparent;
-  z-index: 10;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 60px !important;
+  cursor: move !important;
+  pointer-events: auto !important;
+  background: transparent !important;
+  z-index: 10 !important;
 }
 
 /* 手机端适配 */
 @media (max-width: 768px) {
   #rp-fab {
-    width: 42px; height: 42px;
+    width: 42px !important; height: 42px !important;
+    right: 12px !important; bottom: 12px !important;
   }
   #rp-phone-host {
     width: 320px;
@@ -121,7 +126,7 @@ function createUI() {
   };
 }
 
-// 拖动窗口（通过透明把手）
+// 拖动窗口
 function makeWindowDraggable(win, handle) {
   let dragging = false, startX, startY, startLeft, startTop;
 
@@ -189,7 +194,7 @@ function makeWindowDraggable(win, handle) {
   handle.addEventListener('touchstart', startDragTouch, { passive: false });
 }
 
-// 悬浮球拖动（并保存位置）
+// 悬浮球可拖动（位置会被保存）
 function makeFabDraggable(fab) {
   let dragging = false, startX, startY, startLeft, startTop;
   const onMove = (e) => {
@@ -214,7 +219,6 @@ function makeFabDraggable(fab) {
     document.removeEventListener('mouseup', onEnd);
     document.removeEventListener('touchmove', onMove);
     document.removeEventListener('touchend', onEnd);
-    // 保存位置
     localStorage.setItem('rp_fab_pos', JSON.stringify({ left: fab.style.left, top: fab.style.top }));
   };
   fab.addEventListener('mousedown', (e) => {
@@ -242,7 +246,7 @@ function makeFabDraggable(fab) {
   });
 }
 
-// 修正竖屏悬浮球位置（无视 ST 的 transform）
+// 恢复悬浮球位置（竖屏也永远可见）
 function fixFabPosition(fab) {
   const saved = localStorage.getItem('rp_fab_pos');
   if (saved) {
@@ -262,7 +266,7 @@ function fixFabPosition(fab) {
   fab.style.top = 'auto';
 }
 
-// 监听来自 iframe 的消息
+// 监听来自 iframe 的关闭消息
 function setupMessageListener(host) {
   window.addEventListener('message', (e) => {
     if (e.data && e.data.type === 'CLOSE_PHONE') {
@@ -276,7 +280,7 @@ async function init() {
   injectStyles();
   const { fab, host, iframe, dragHandle } = createUI();
 
-  // 设置手机初始位置（右下）
+  // 初始位置
   host.style.left = (window.innerWidth - 390 - 20) + 'px';
   host.style.top = (window.innerHeight - 650 - 20) + 'px';
 
@@ -308,7 +312,7 @@ async function init() {
 
   setupMessageListener(host);
 
-  console.log('📱 虚拟手机扩展已加载');
+  console.log('📱 虚拟手机扩展已加载 - 透明无边框版');
 }
 
 jQuery(() => init());
