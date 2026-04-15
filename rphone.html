@@ -1,216 +1,249 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8">
-	<title>虚拟手机</title>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-	<style>
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
-    -webkit-font-smoothing: antialiased;
-}
+    <meta charset="UTF-8">
+    <title>虚拟手机 · 预加载版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
 
-html, body {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: transparent;
-}
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: transparent;
+        }
 
-.iphone {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    background-image: url('https://i.postimg.cc/KvNGSyyZ/IMG-8349.jpg');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    border-radius: 28px;
-    border: 4px solid #1a1a1a;
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.08) inset;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
+        .iphone {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://i.postimg.cc/KvNGSyyZ/IMG-8349.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            border-radius: 28px;
+            border: 4px solid #1a1a1a;
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.08) inset;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
 
-.dynamic-island {
-    position: absolute;
-    top: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 90px;
-    height: 26px;
-    background-color: #000;
-    border-radius: 16px;
-    z-index: 50;
-}
+        .dynamic-island {
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90px;
+            height: 26px;
+            background-color: #000;
+            border-radius: 16px;
+            z-index: 50;
+        }
 
-.status-bar {
-    position: relative;
-    z-index: 40;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 22px 0 22px;
-    color: #ffffff;
-    font-size: 13px;
-    font-weight: 600;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-    flex-shrink: 0;
-}
+        .status-bar {
+            position: relative;
+            z-index: 40;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 22px 0 22px;
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            flex-shrink: 0;
+        }
 
-.status-bar .icons {
-    display: flex;
-    align-items: center;
-}
+        .status-bar .icons {
+            display: flex;
+            align-items: center;
+        }
 
-.status-bar .icons i,
-.status-bar .icons span {
-    margin-left: 5px;
-    font-size: 12px;
-}
+        .status-bar .icons i,
+        .status-bar .icons span {
+            margin-left: 5px;
+            font-size: 12px;
+        }
 
-.bold-wifi {
-    -webkit-text-stroke: 0.8px #ffffff;
-}
+        .bold-wifi {
+            -webkit-text-stroke: 0.8px #ffffff;
+        }
 
-.home-screen {
-    flex: 1;
-    padding: 30px 18px 10px 18px;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-auto-rows: 90px;
-    gap: 16px 10px;
-    align-content: start;
-    overflow-y: auto;
-    min-height: 0;
-}
+        .home-screen {
+            flex: 1;
+            padding: 30px 18px 10px 18px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-auto-rows: 90px;
+            gap: 16px 10px;
+            align-content: start;
+            overflow-y: auto;
+            min-height: 0;
+        }
 
-.app-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    cursor: pointer;
-    transition: transform 0.1s ease;
-    -webkit-tap-highlight-color: transparent;
-}
+        .app-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
 
-.app-item:active {
-    transform: scale(0.88);
-}
+        .app-item:active {
+            transform: scale(0.88);
+        }
 
-.app-icon {
-    width: 54px;
-    height: 54px;
-    border-radius: 13px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 26px;
-    color: white;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
-    overflow: hidden;
-}
+        .app-icon {
+            width: 54px;
+            height: 54px;
+            border-radius: 13px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 26px;
+            color: white;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+            overflow: hidden;
+        }
 
-.app-icon img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 13px;
-    display: block;
-}
+        .app-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 13px;
+            display: block;
+        }
 
-.app-name {
-    margin-top: 5px;
-    font-size: 11px;
-    font-weight: 600;
-    color: white;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-    letter-spacing: 0.3px;
-    text-align: center;
-}
+        .app-name {
+            margin-top: 5px;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+            letter-spacing: 0.3px;
+            text-align: center;
+        }
 
-.bg-weibo   { background: linear-gradient(180deg, #ff4d64, #e6162d); }
-.bg-settings{ background: linear-gradient(180deg, #a0a4aa, #727880); }
-.bg-theme   { background: linear-gradient(180deg, #ff85c2, #ff69b4); }
-.bg-phone   { background: linear-gradient(180deg, #52d667, #34c759); }
-.bg-contacts{ background: linear-gradient(180deg, #b0b4b8, #8e8e93); }
+        .bg-weibo   { background: linear-gradient(180deg, #ff4d64, #e6162d); }
+        .bg-settings{ background: linear-gradient(180deg, #a0a4aa, #727880); }
+        .bg-theme   { background: linear-gradient(180deg, #ff85c2, #ff69b4); }
+        .bg-phone   { background: linear-gradient(180deg, #52d667, #34c759); }
+        .bg-contacts{ background: linear-gradient(180deg, #b0b4b8, #8e8e93); }
 
-.dock {
-    margin: 0 10px 28px 10px;
-    height: 76px;
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(25px);
-    -webkit-backdrop-filter: blur(25px);
-    border-radius: 24px;
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    padding: 0 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(255,255,255,0.1);
-    flex-shrink: 0;
-}
+        .dock {
+            margin: 0 10px 28px 10px;
+            height: 76px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-radius: 24px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255,255,255,0.1);
+            flex-shrink: 0;
+        }
 
-.dock .app-item .app-name {
-    display: none;
-}
+        .dock .app-item .app-name {
+            display: none;
+        }
 
-.home-indicator-area {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 28px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    z-index: 200000;
-    -webkit-tap-highlight-color: transparent;
-}
+        .home-indicator-area {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 28px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 200000;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-.home-bar {
-    width: 110px;
-    height: 4px;
-    background: rgba(255,255,255,0.9);
-    border-radius: 10px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-    transition: transform 0.15s, background 0.2s;
-}
+        .home-bar {
+            width: 110px;
+            height: 4px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            transition: transform 0.15s, background 0.2s;
+        }
 
-.home-indicator-area:hover .home-bar {
-    background: #e0e0e0;
-}
-.home-indicator-area:active .home-bar {
-    transform: scaleX(0.85);
-    background: #ccc;
-}
+        .home-indicator-area:hover .home-bar {
+            background: #e0e0e0;
+        }
+        .home-indicator-area:active .home-bar {
+            transform: scaleX(0.85);
+            background: #ccc;
+        }
 
-#app-window {
-    display: none;
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;              /* 全屏覆盖，不留空隙 */
-    background: white;
-    z-index: 100000;
-    border-radius: 0 0 28px 28px; /* 底部圆角匹配手机外框 */
-}
+        /* 预加载容器：隐藏所有预加载的 iframe */
+        #preload-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 99999;
+            visibility: hidden; /* 完全隐藏，不影响点击 */
+        }
 
-#app-screen {
-    width: 100%;
-    height: 100%;
-    border: none;
-    display: block;
-    border-radius: 0 0 28px 28px; /* 底部圆角匹配 */
-}
-	</style>
+        #preload-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            background-color: #1a1a1a; /* 深色底，避免白闪 */
+            border-radius: 0 0 28px 28px;
+            visibility: visible; /* 在隐藏容器内本身可见，但容器隐藏 */
+        }
+
+        /* 显示窗口：只容纳当前激活的 iframe */
+        #app-window {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 100000;
+            border-radius: 0 0 28px 28px;
+            overflow: hidden;
+            background-color: #1a1a1a;
+        }
+
+        #active-frame-wrapper {
+            width: 100%;
+            height: 100%;
+        }
+
+        #active-frame-wrapper iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+            border-radius: 0 0 28px 28px;
+            background-color: #1a1a1a;
+        }
+    </style>
 </head>
 
 <body>
@@ -226,42 +259,44 @@ html, body {
             </div>
         </div>
 
+        <!-- 桌面图标区 -->
         <div class="home-screen" id="home-screen">
             <div class="app-item" data-app="weixin.html">
                 <div class="app-icon">
-                    <img src="https://i.postimg.cc/L53NQ5Pk/IMG-8340.jpg">
+                    <img src="https://i.postimg.cc/L53NQ5Pk/IMG-8340.jpg" alt="微信">
                 </div>
                 <div class="app-name">微信</div>
             </div>
 
             <div class="app-item" data-app="pyq.html">
                 <div class="app-icon">
-                    <img src="https://i.postimg.cc/50G4r9wr/IMG-8350.jpg">
+                    <img src="https://i.postimg.cc/50G4r9wr/IMG-8350.jpg" alt="朋友圈">
                 </div>
                 <div class="app-name">朋友圈</div>
             </div>
 
             <div class="app-item" data-app="note.html">
                 <div class="app-icon">
-                    <img src="https://i.postimg.cc/3rDxzpdd/IMG-8345.jpg">
+                    <img src="https://i.postimg.cc/3rDxzpdd/IMG-8345.jpg" alt="日记">
                 </div>
                 <div class="app-name">日记</div>
             </div>
 
             <div class="app-item" data-app="zichan.html">
                 <div class="app-icon">
-                    <img src="https://i.postimg.cc/gc56Zm6K/IMG-8346.jpg">
+                    <img src="https://i.postimg.cc/gc56Zm6K/IMG-8346.jpg" alt="资产">
                 </div>
                 <div class="app-name">资产</div>
             </div>
 
             <div class="app-item" data-app="xhs.html">
                 <div class="app-icon">
-                    <img src="https://i.postimg.cc/QMCqDs9h/IMG-8353.jpg">
+                    <img src="https://i.postimg.cc/QMCqDs9h/IMG-8353.jpg" alt="小红书">
                 </div>
                 <div class="app-name">小红书</div>
             </div>
 
+            <!-- 以下是没有 data-app 的纯图标，不参与预加载和点击打开（仅作展示） -->
             <div class="app-item">
                 <div class="app-icon bg-weibo"><i class="fa-brands fa-weibo"></i></div>
                 <div class="app-name">微博</div>
@@ -274,7 +309,7 @@ html, body {
 
             <div class="app-item" data-app="api.html">
                 <div class="app-icon">
-                    <img src="https://i.postimg.cc/ydQ4d7nj/IMG-8354.jpg">
+                    <img src="https://i.postimg.cc/ydQ4d7nj/IMG-8354.jpg" alt="API">
                 </div>
                 <div class="app-name">API</div>
             </div>
@@ -285,6 +320,7 @@ html, body {
             </div>
         </div>
 
+        <!-- Dock 栏 -->
         <div class="dock">
             <div class="app-item">
                 <div class="app-icon bg-phone"><i class="fa-solid fa-phone"></i></div>
@@ -294,135 +330,235 @@ html, body {
             </div>
             <div class="app-item" data-app="llq.html">
                 <div class="app-icon">
-                    <img src="https://i.postimg.cc/0Q6x7gLW/IMG-8347.jpg">
+                    <img src="https://i.postimg.cc/0Q6x7gLW/IMG-8347.jpg" alt="浏览器">
                 </div>
             </div>
         </div>
 
-        <div class="home-indicator-area" id="homeIndicator" title="返回">
+        <!-- Home 指示条 -->
+        <div class="home-indicator-area" id="homeIndicator" title="返回桌面">
             <div class="home-bar"></div>
         </div>
 
+        <!-- 预加载隐藏容器 -->
+        <div id="preload-container"></div>
+
+        <!-- App 显示窗口 -->
         <div id="app-window">
-            <iframe id="app-screen" src="" sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals"></iframe>
+            <div id="active-frame-wrapper"></div>
         </div>
     </div>
 
     <script>
-    // ===== 导航历史栈 =====
-    var navHistory = [];
-    var appIsOpen = false;
+        (function(){
+            "use strict";
 
-    // ===== 获取基础URL =====
-    function getBaseUrl() {
-        var currentUrl = window.location.href;
-        var lastSlash = currentUrl.lastIndexOf('/');
-        return currentUrl.substring(0, lastSlash + 1);
-    }
+            // ---------- 全局变量 ----------
+            const BASE_URL = (function() {
+                var url = window.location.href;
+                var lastSlash = url.lastIndexOf('/');
+                return url.substring(0, lastSlash + 1);
+            })();
 
-    var BASE_URL = getBaseUrl();
+            // 存储所有预加载的 iframe，key 为文件名（如 "weixin.html"）
+            const preloadedFrames = new Map();
+            let activeAppKey = null;          // 当前显示的应用 key
+            let appIsOpen = false;
 
-    // ===== 打开应用 =====
-    function openApp(targetHtml) {
-        if (!targetHtml) return;
-        
-        var windowContainer = document.getElementById('app-window');
-        var screenFrame = document.getElementById('app-screen');
-        
-        var fullUrl = targetHtml;
-        if (targetHtml.indexOf('http') !== 0) {
-            fullUrl = BASE_URL + targetHtml;
-        }
-        
-        console.log('📱 Opening app:', fullUrl);
-        
-        if (appIsOpen && screenFrame.src && screenFrame.src !== '' && screenFrame.src !== 'about:blank') {
-            navHistory.push(screenFrame.src);
-        }
-        
-        screenFrame.src = fullUrl;
-        windowContainer.style.display = 'block';
-        appIsOpen = true;
-    }
+            // DOM 元素
+            const preloadContainer = document.getElementById('preload-container');
+            const appWindow = document.getElementById('app-window');
+            const wrapper = document.getElementById('active-frame-wrapper');
+            const homeIndicator = document.getElementById('homeIndicator');
 
-    // ===== 关闭应用（返回桌面） =====
-    function closeApp() {
-        var windowContainer = document.getElementById('app-window');
-        var screenFrame = document.getElementById('app-screen');
-        
-        windowContainer.style.display = 'none';
-        screenFrame.src = '';
-        navHistory = [];
-        appIsOpen = false;
-        
-        console.log('📱 App closed, back to home');
-    }
+            // 时钟更新
+            function updateClock() {
+                const now = new Date();
+                const h = String(now.getHours()).padStart(2, '0');
+                const m = String(now.getMinutes()).padStart(2, '0');
+                const clockEl = document.getElementById('sys-clock');
+                if (clockEl) clockEl.textContent = h + ':' + m;
+            }
+            updateClock();
+            setInterval(updateClock, 1000);
 
-    // ===== 返回上一页 =====
-    function goBack() {
-        if (!appIsOpen) return;
-        
-        if (navHistory.length > 0) {
-            var prevUrl = navHistory.pop();
-            var screenFrame = document.getElementById('app-screen');
-            screenFrame.src = prevUrl;
-            console.log('📱 Going back to:', prevUrl);
-        } else {
-            // 没有历史记录 -> 关闭应用回桌面
-            closeApp();
-        }
-    }
-
-    // ===== 时钟更新 =====
-    function updateClock() {
-        var now = new Date();
-        var h = String(now.getHours()).padStart(2, '0');
-        var m = String(now.getMinutes()).padStart(2, '0');
-        var clockEl = document.getElementById('sys-clock');
-        if (clockEl) {
-            clockEl.textContent = h + ':' + m;
-        }
-    }
-    updateClock();
-    setInterval(updateClock, 1000);
-
-    // ===== 绑定所有 app-item 的点击事件 =====
-    var allAppItems = document.querySelectorAll('.app-item[data-app]');
-    for (var i = 0; i < allAppItems.length; i++) {
-        (function(item) {
-            item.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                var target = item.getAttribute('data-app');
-                console.log('📱 App tapped:', target);
-                if (target) {
-                    openApp(target);
+            // ---------- 获取所有需要预加载的 app 文件名 ----------
+            function getAppList() {
+                const items = document.querySelectorAll('.app-item[data-app]');
+                const list = [];
+                for (let item of items) {
+                    const app = item.getAttribute('data-app');
+                    if (app && !preloadedFrames.has(app)) {
+                        list.push(app);
+                    }
                 }
+                return list;
+            }
+
+            // ---------- 预加载单个应用 ----------
+            function preloadApp(appFile) {
+                return new Promise((resolve) => {
+                    const fullUrl = (appFile.indexOf('http') === 0) ? appFile : BASE_URL + appFile;
+                    const iframe = document.createElement('iframe');
+                    
+                    iframe.src = fullUrl;
+                    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-forms allow-modals');
+                    iframe.style.backgroundColor = '#1a1a1a';
+                    
+                    // 放入隐藏容器
+                    preloadContainer.appendChild(iframe);
+                    
+                    // 监听加载完成
+                    iframe.onload = () => {
+                        preloadedFrames.set(appFile, iframe);
+                        console.log(`✅ 预加载完成: ${appFile}`);
+                        resolve();
+                    };
+                    
+                    iframe.onerror = () => {
+                        console.warn(`⚠️ 预加载失败（将尝试降级）: ${appFile}`);
+                        // 即使失败也记录，但值为 null，后续点击时会降级到传统方式
+                        preloadedFrames.set(appFile, null);
+                        resolve();
+                    };
+                });
+            }
+
+            // ---------- 预加载所有应用 ----------
+            async function preloadAllApps() {
+                const apps = getAppList();
+                console.log(`📦 开始预加载 ${apps.length} 个应用...`);
+                for (let app of apps) {
+                    await preloadApp(app);
+                }
+                console.log('🎉 所有应用预加载完毕！');
+            }
+
+            // ---------- 显示应用（瞬时切换）----------
+            function showApp(appFile) {
+                if (!appFile) return;
+
+                const targetFrame = preloadedFrames.get(appFile);
+                
+                // 如果预加载失败或尚未加载，降级为传统方式（极少发生）
+                if (!targetFrame) {
+                    console.warn(`⚠️ 应用未预加载，使用传统方式打开: ${appFile}`);
+                    fallbackOpen(appFile);
+                    return;
+                }
+
+                // 如果当前有显示的应用，将其移回隐藏容器
+                if (activeAppKey) {
+                    const oldFrame = preloadedFrames.get(activeAppKey);
+                    if (oldFrame) {
+                        preloadContainer.appendChild(oldFrame);
+                    }
+                }
+
+                // 将目标 iframe 移到显示区域
+                wrapper.innerHTML = '';
+                wrapper.appendChild(targetFrame);
+                
+                // 确保 iframe 完全可见
+                targetFrame.style.width = '100%';
+                targetFrame.style.height = '100%';
+                
+                // 显示 app-window
+                appWindow.style.display = 'block';
+                activeAppKey = appFile;
+                appIsOpen = true;
+                
+                console.log(`📱 瞬时打开: ${appFile}`);
+            }
+
+            // 降级方案：传统 src 加载方式（几乎不会用到）
+            function fallbackOpen(appFile) {
+                const fullUrl = (appFile.indexOf('http') === 0) ? appFile : BASE_URL + appFile;
+                const iframe = document.createElement('iframe');
+                iframe.src = fullUrl;
+                iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-forms allow-modals');
+                iframe.style.width = '100%';
+                iframe.style.height = '100%';
+                iframe.style.border = 'none';
+                iframe.style.backgroundColor = '#1a1a1a';
+                iframe.style.borderRadius = '0 0 28px 28px';
+                
+                wrapper.innerHTML = '';
+                wrapper.appendChild(iframe);
+                appWindow.style.display = 'block';
+                activeAppKey = appFile;
+                appIsOpen = true;
+                
+                // 记录这个新 iframe，以便后续管理
+                preloadedFrames.set(appFile, iframe);
+            }
+
+            // ---------- 关闭应用（返回桌面）----------
+            function closeApp() {
+                if (!appIsOpen) return;
+                
+                // 将当前 iframe 移回预加载容器（保留状态）
+                if (activeAppKey) {
+                    const frame = preloadedFrames.get(activeAppKey);
+                    if (frame) {
+                        preloadContainer.appendChild(frame);
+                    }
+                }
+                
+                appWindow.style.display = 'none';
+                activeAppKey = null;
+                appIsOpen = false;
+                console.log('📱 返回桌面');
+            }
+
+            // ---------- 绑定点击事件 ----------
+            function bindEvents() {
+                // 所有带 data-app 属性的图标
+                const appItems = document.querySelectorAll('.app-item[data-app]');
+                for (let item of appItems) {
+                    item.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const app = item.getAttribute('data-app');
+                        showApp(app);
+                    });
+                }
+
+                // Home 指示条：返回桌面
+                if (homeIndicator) {
+                    homeIndicator.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        closeApp();
+                    });
+                }
+
+                // 监听子页面发来的导航消息（兼容原逻辑）
+                window.addEventListener('message', (e) => {
+                    if (e.data && e.data.type === 'NAVIGATE') {
+                        // 如果子页面要求导航到另一个 app，直接打开
+                        showApp(e.data.target);
+                    } else if (e.data && e.data.type === 'GO_BACK') {
+                        closeApp();
+                    }
+                });
+            }
+
+            // ---------- 启动：预加载 → 绑定事件 ----------
+            window.addEventListener('load', async () => {
+                await preloadAllApps();
+                bindEvents();
+                console.log('📱 虚拟手机已就绪（预加载模式）');
             });
-        })(allAppItems[i]);
-    }
 
-    // ===== 绑定 Home 指示条 =====
-    var homeBtn = document.getElementById('homeIndicator');
-    if (homeBtn) {
-        homeBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            goBack();
-        });
-    }
+            // 可选：如果需要在预加载完成前点击也能工作（但为了体验，建议等待预加载完成）
+            // 这里提前绑定事件也无妨，因为 showApp 会判断预加载状态，未完成时会降级
+            // 但为了确保瞬时体验，最好等预加载完成再允许点击。我们在 preloadAllApps 后绑定。
+            // 但为了防止用户过早点击，可以先临时禁用点击？不需要，降级方案能兜底。
 
-    // ===== 监听子页面发来的导航消息 =====
-    window.addEventListener('message', function(e) {
-        if (e.data && e.data.type === 'NAVIGATE') {
-            openApp(e.data.target);
-        }
-        if (e.data && e.data.type === 'GO_BACK') {
-            goBack();
-        }
-    });
-
-    console.log('📱 rphone.html fully loaded, found', allAppItems.length, 'clickable apps');
+            // 额外：处理 iframe 内链接跳转导致 src 变化的问题（可选）
+            // 这里不处理，因为子页面一般是静态内容；若需支持，可监听 iframe load 事件更新映射。
+        })();
     </script>
 </body>
 </html>
