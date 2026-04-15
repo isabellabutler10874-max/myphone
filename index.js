@@ -1,19 +1,14 @@
 // ================================================================
-//  虚拟手机扩展 - 纯透明可拖动窗口 + 始终可见悬浮球（优化版 V2）
-//  参考 mochi.js 移动端定位方案，修复竖屏悬浮球不可见问题
+//  虚拟手机扩展 - 纯透明可拖动窗口 + 始终可见悬浮球（修复版）
 // ================================================================
 
 const IS_TOUCH_DEVICE = window.matchMedia('(hover: none) and (pointer: coarse)').matches
                      || /Android|iPhone|iPod/i.test(navigator.userAgent);
 
 const CSS = `
-/* 悬浮球 - 手机端用 calc(100vh) 绕过 html transform 问题 */
+/* 悬浮球 - 确保始终在可视区域内 */
 #rp-fab {
   position: fixed !important;
-  right: 20px !important;
-  bottom: 20px !important;
-  left: auto !important;
-  top: auto !important;
   z-index: 2147483647 !important;
   width: 52px !important;
   height: 52px !important;
@@ -31,16 +26,19 @@ const CSS = `
   transition: transform 0.15s !important;
   user-select: none !important;
   touch-action: none !important;
+  /* 默认位置用 left/top 计算，避免 right/bottom 在不同容器下表现不一致 */
+  left: calc(100vw - 72px) !important;
+  top: calc(100vh - 72px) !important;
+  right: auto !important;
+  bottom: auto !important;
 }
 #rp-fab:hover { transform: scale(1.1) !important; }
 #rp-fab svg { width: 100% !important; height: 100% !important; display: block !important; }
 
-/* 手机容器 */
+/* 手机容器 - 完全透明，无背景，无边框，无阴影 */
 #rp-phone-host {
   position: fixed !important;
   z-index: 10000 !important;
-  width: 390px;
-  height: 650px;
   display: none;
   background: transparent !important;
   border: none !important;
@@ -48,6 +46,7 @@ const CSS = `
   pointer-events: none;
 }
 
+/* iframe 填满 */
 #rp-phone-iframe {
   width: 100% !important;
   height: 100% !important;
@@ -56,6 +55,7 @@ const CSS = `
   pointer-events: auto;
 }
 
+/* 透明拖动把手 - 覆盖灵动岛区域 */
 #rp-drag-handle {
   position: absolute !important;
   top: 0 !important;
@@ -68,20 +68,42 @@ const CSS = `
   z-index: 10 !important;
 }
 
-/* 移动端适配 */
-@media (max-width: 768px) {
+/* ===== 响应式尺寸 ===== */
+
+/* 桌面端 */
+@media (min-width: 769px) {
+  #rp-phone-host {
+    width: 390px;
+    height: 650px;
+  }
+}
+
+/* 平板竖屏 */
+@media (max-width: 768px) and (min-width: 481px) {
   #rp-fab {
-    width: 42px !important; height: 42px !important;
-    /* 绕过 html transform 的 fixed 失效问题 */
-    top: calc(100vh - 110px) !important;
-    bottom: auto !important;
-    right: 14px !important;
-    left: auto !important;
-    transform: none !important;
+    width: 46px !important;
+    height: 46px !important;
+    left: calc(100vw - 58px) !important;
+    top: calc(100vh - 58px) !important;
   }
   #rp-phone-host {
-    width: 320px;
-    height: 533px;
+    width: 340px;
+    height: 567px;
+  }
+}
+
+/* 手机端 */
+@media (max-width: 480px) {
+  #rp-fab {
+    width: 42px !important;
+    height: 42px !important;
+    left: calc(100vw - 54px) !important;
+    top: calc(100vh - 54px) !important;
+  }
+  #rp-phone-host {
+    /* 留出上下边距，宽度占满但留边 */
+    width: calc(100vw - 20px);
+    height: calc(100vh - 40px);
   }
 }
 `;
@@ -122,7 +144,6 @@ function createUI() {
   return { fab, host, iframe: host.querySelector('#rp-phone-iframe'), dragHandle: host.querySelector('#rp-drag-handle') };
 }
 
-// 拖动窗口
 function makeWindowDraggable(win, handle) {
   let dragging = false, startX, startY, startLeft, startTop;
 
@@ -131,8 +152,13 @@ function makeWindowDraggable(win, handle) {
     e.preventDefault();
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
-    win.style.left = (startLeft + dx) + 'px';
-    win.style.top = (startTop + dy) + 'px';
+    let newLeft = startLeft + dx;
+    let newTop = startTop + dy;
+    // 限制不超出视口
+    newLeft = Math.max(0, Math.min(window.innerWidth - win.offsetWidth, newLeft));
+    newTop = Math.max(0, Math.min(window.innerHeight - win.offsetHeight, newTop));
+    win.style.left = newLeft + 'px';
+    win.style.top = newTop + 'px';
   };
 
   const onMouseUp = () => {
@@ -141,7 +167,7 @@ function makeWindowDraggable(win, handle) {
     document.removeEventListener('mouseup', onMouseUp);
   };
 
-  const startDrag = (e) => {
+  handle.addEventListener('mousedown', (e) => {
     if (e.button !== 0) return;
     e.preventDefault();
     const rect = win.getBoundingClientRect();
@@ -152,11 +178,9 @@ function makeWindowDraggable(win, handle) {
     dragging = true;
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
-  };
+  });
 
-  handle.addEventListener('mousedown', startDrag);
-
-  const startDragTouch = (e) => {
+  handle.addEventListener('touchstart', (e) => {
     const touch = e.touches[0];
     const rect = win.getBoundingClientRect();
     startX = touch.clientX;
@@ -167,9 +191,13 @@ function makeWindowDraggable(win, handle) {
     const onTouchMove = (e2) => {
       if (!dragging) return;
       e2.preventDefault();
-      const touch2 = e2.touches[0];
-      win.style.left = (startLeft + (touch2.clientX - startX)) + 'px';
-      win.style.top = (startTop + (touch2.clientY - startY)) + 'px';
+      const t = e2.touches[0];
+      let newLeft = startLeft + (t.clientX - startX);
+      let newTop = startTop + (t.clientY - startY);
+      newLeft = Math.max(0, Math.min(window.innerWidth - win.offsetWidth, newLeft));
+      newTop = Math.max(0, Math.min(window.innerHeight - win.offsetHeight, newTop));
+      win.style.left = newLeft + 'px';
+      win.style.top = newTop + 'px';
     };
     const onTouchEnd = () => {
       dragging = false;
@@ -178,22 +206,22 @@ function makeWindowDraggable(win, handle) {
     };
     document.addEventListener('touchmove', onTouchMove, { passive: false });
     document.addEventListener('touchend', onTouchEnd);
-  };
-
-  handle.addEventListener('touchstart', startDragTouch, { passive: false });
+  }, { passive: false });
 }
 
-// 悬浮球拖动（增强边界限制 + 位置记忆）
 function makeFabDraggable(fab) {
-  let dragging = false, startX, startY, startLeft, startTop;
+  let dragging = false, moved = false, startX, startY, startLeft, startTop;
+
   const onMove = (e) => {
     if (!dragging) return;
     e.preventDefault();
     const clientX = e.clientX ?? e.touches[0].clientX;
     const clientY = e.clientY ?? e.touches[0].clientY;
-    let newLeft = startLeft + (clientX - startX);
-    let newTop = startTop + (clientY - startY);
-    // 边界限制
+    const dx = clientX - startX;
+    const dy = clientY - startY;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+    let newLeft = startLeft + dx;
+    let newTop = startTop + dy;
     newLeft = Math.max(0, Math.min(window.innerWidth - fab.offsetWidth, newLeft));
     newTop = Math.max(0, Math.min(window.innerHeight - fab.offsetHeight, newTop));
     fab.style.left = newLeft + 'px';
@@ -201,16 +229,19 @@ function makeFabDraggable(fab) {
     fab.style.right = 'auto';
     fab.style.bottom = 'auto';
   };
+
   const onEnd = () => {
     dragging = false;
     document.removeEventListener('mousemove', onMove);
     document.removeEventListener('mouseup', onEnd);
     document.removeEventListener('touchmove', onMove);
     document.removeEventListener('touchend', onEnd);
-    // 保存位置（按设备类型分 key，避免 PC 和手机串位置）
-    const posKey = IS_TOUCH_DEVICE ? 'rp_fab_pos_mobile' : 'rp_fab_pos';
-    localStorage.setItem(posKey, JSON.stringify({ left: fab.style.left, top: fab.style.top }));
+    localStorage.setItem('rp_fab_pos', JSON.stringify({
+      left: fab.style.left,
+      top: fab.style.top
+    }));
   };
+
   fab.addEventListener('mousedown', (e) => {
     if (e.button !== 0) return;
     e.preventDefault();
@@ -220,9 +251,11 @@ function makeFabDraggable(fab) {
     startLeft = rect.left;
     startTop = rect.top;
     dragging = true;
+    moved = false;
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onEnd);
   });
+
   fab.addEventListener('touchstart', (e) => {
     const touch = e.touches[0];
     const rect = fab.getBoundingClientRect();
@@ -231,22 +264,26 @@ function makeFabDraggable(fab) {
     startLeft = rect.left;
     startTop = rect.top;
     dragging = true;
+    moved = false;
     document.addEventListener('touchmove', onMove, { passive: false });
     document.addEventListener('touchend', onEnd);
   });
+
+  // 返回 moved 状态供 click 判断
+  fab._isMoved = () => moved;
 }
 
-// 恢复悬浮球位置（优先读取保存位置，否则右下角）
 function fixFabPosition(fab) {
-  const posKey = IS_TOUCH_DEVICE ? 'rp_fab_pos_mobile' : 'rp_fab_pos';
-  const saved = localStorage.getItem(posKey);
+  const saved = localStorage.getItem('rp_fab_pos');
   if (saved) {
     try {
       const { left, top } = JSON.parse(saved);
       const l = parseFloat(left);
       const t = parseFloat(top);
-      // 验证位置是否在可视区域内
-      if (!isNaN(l) && !isNaN(t) && l >= 0 && t >= 0 && l <= window.innerWidth - fab.offsetWidth && t <= window.innerHeight - fab.offsetHeight) {
+      if (!isNaN(l) && !isNaN(t) &&
+          l >= 0 && t >= 0 &&
+          l <= window.innerWidth - fab.offsetWidth &&
+          t <= window.innerHeight - fab.offsetHeight) {
         fab.style.left = left;
         fab.style.top = top;
         fab.style.right = 'auto';
@@ -255,21 +292,13 @@ function fixFabPosition(fab) {
       }
     } catch(e) {}
   }
-  // 默认右下角（手机端强制用 top 定位）
-  if (IS_TOUCH_DEVICE) {
-    fab.style.top = 'calc(100vh - 110px)';
-    fab.style.right = '14px';
-    fab.style.left = 'auto';
-    fab.style.bottom = 'auto';
-  } else {
-    fab.style.right = '20px';
-    fab.style.bottom = '20px';
-    fab.style.left = 'auto';
-    fab.style.top = 'auto';
-  }
+  // 默认：使用绝对像素定位到右下角（避免 right/bottom 在嵌入环境中出问题）
+  fab.style.left = (window.innerWidth - fab.offsetWidth - 20) + 'px';
+  fab.style.top = (window.innerHeight - fab.offsetHeight - 20) + 'px';
+  fab.style.right = 'auto';
+  fab.style.bottom = 'auto';
 }
 
-// 监听来自 iframe 的关闭消息
 function setupMessageListener(host) {
   window.addEventListener('message', (e) => {
     if (e.data && e.data.type === 'CLOSE_PHONE') {
@@ -282,38 +311,56 @@ async function init() {
   injectStyles();
   const { fab, host, iframe, dragHandle } = createUI();
 
-  // 初始窗口位置
-  host.style.left = Math.max(20, window.innerWidth - 390 - 20) + 'px';
-  host.style.top = Math.max(20, window.innerHeight - 650 - 20) + 'px';
-
   makeWindowDraggable(host, dragHandle);
   makeFabDraggable(fab);
-  fixFabPosition(fab);
+
+  // 需要等 fab 渲染后再计算位置
+  requestAnimationFrame(() => {
+    fixFabPosition(fab);
+  });
 
   const PHONE_URL = 'https://isabellabutler10874-max.github.io/myphone/rphone.html';
   let iframeLoaded = false;
 
   fab.addEventListener('click', (e) => {
+    // 如果是拖动结束，不触发点击
+    if (fab._isMoved && fab._isMoved()) return;
     if (e.defaultPrevented) return;
+
     if (host.style.display === 'none' || !host.style.display) {
       if (!iframeLoaded) {
         iframe.src = PHONE_URL;
         iframeLoaded = true;
       }
       host.style.display = 'block';
-      if (IS_TOUCH_DEVICE) {
+
+      // 居中显示手机
+      requestAnimationFrame(() => {
         const w = host.offsetWidth;
         const h = host.offsetHeight;
-        host.style.left = `${(window.innerWidth - w) / 2}px`;
-        host.style.top = `${(window.innerHeight - h) / 2}px`;
-      }
+        host.style.left = Math.max(0, (window.innerWidth - w) / 2) + 'px';
+        host.style.top = Math.max(0, (window.innerHeight - h) / 2) + 'px';
+      });
     } else {
       host.style.display = 'none';
     }
   });
 
+  // 窗口大小变化时，重新校验悬浮球位置
+  window.addEventListener('resize', () => {
+    const rect = fab.getBoundingClientRect();
+    let l = rect.left;
+    let t = rect.top;
+    l = Math.max(0, Math.min(window.innerWidth - fab.offsetWidth, l));
+    t = Math.max(0, Math.min(window.innerHeight - fab.offsetHeight, t));
+    fab.style.left = l + 'px';
+    fab.style.top = t + 'px';
+    fab.style.right = 'auto';
+    fab.style.bottom = 'auto';
+  });
+
   setupMessageListener(host);
-  console.log('📱 虚拟手机扩展已加载 - 优化版 V2');
+  console.log('📱 虚拟手机扩展已加载 - 修复版');
 }
 
 if (document.readyState === 'loading') {
