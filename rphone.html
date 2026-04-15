@@ -197,10 +197,10 @@ html, body {
     top: 0;
     left: 0;
     width: 100%;
-    height: calc(100% - 28px);
+    height: 100%;              /* 全屏覆盖，不留空隙 */
     background: white;
     z-index: 100000;
-    border-radius: 0 0 0 0;
+    border-radius: 0 0 28px 28px; /* 底部圆角匹配手机外框 */
 }
 
 #app-screen {
@@ -208,6 +208,7 @@ html, body {
     height: 100%;
     border: none;
     display: block;
+    border-radius: 0 0 28px 28px; /* 底部圆角匹配 */
 }
 	</style>
 </head>
