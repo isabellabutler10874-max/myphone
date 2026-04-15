@@ -198,9 +198,9 @@ html, body {
     top: 0;
     left: 0;
     width: 100%;
-    height: 100%;              
+    height: 100%;              
     z-index: 100000;
-    border-radius: 0 0 28px 28px; 
+    border-radius: 0 0 28px 28px; 
     overflow: hidden;
 }
 
@@ -336,18 +336,18 @@ html, body {
     function initPreload() {
         var windowContainer = document.getElementById('app-window');
         var allAppItems = document.querySelectorAll('.app-item[data-app]');
-        
+        
         allAppItems.forEach(function(item) {
             var targetHtml = item.getAttribute('data-app');
             if (targetHtml && !preloadedApps[targetHtml]) {
                 var fullUrl = targetHtml.indexOf('http') === 0 ? targetHtml : BASE_URL + targetHtml;
-                
+                
                 // 在后台默默创建 iframe 并加载
                 var iframe = document.createElement('iframe');
                 iframe.className = 'app-iframe';
                 iframe.src = fullUrl;
                 iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-forms allow-modals');
-                
+                
                 windowContainer.appendChild(iframe);
                 preloadedApps[targetHtml] = iframe; // 存入字典
             }
@@ -375,9 +375,9 @@ html, body {
     // ===== 瞬间打开应用 =====
     function openApp(targetHtml) {
         if (!targetHtml) return;
-        
+        
         var windowContainer = document.getElementById('app-window');
-        
+        
         // 1. 如果当前有正在前台的App，先把它隐身，并记入历史
         if (appIsOpen && currentActiveApp && currentActiveApp !== targetHtml) {
             navHistory.push(currentActiveApp);
@@ -385,56 +385,67 @@ html, body {
                 preloadedApps[currentActiveApp].classList.remove('active');
             }
         }
-        
+        
         // 2. 拿到目标 App 的 iframe
         var targetIframe = getOrCreateIframe(targetHtml);
-        
+        
         // 3. 瞬间显示！不再有网络请求和DOM重绘延迟
         targetIframe.classList.add('active');
         windowContainer.style.display = 'block';
-        
+        
+        // 【核心机制：唤醒广播】通知子页面它被打开了，可以刷新数据了
+        if (targetIframe.contentWindow) {
+            targetIframe.contentWindow.postMessage({ type: 'APP_ACTIVE' }, '*');
+        }
+        
         currentActiveApp = targetHtml;
         appIsOpen = true;
-        
+        
         console.log('📱 App instantly opened:', targetHtml);
     }
 
     // ===== 关闭应用（退回桌面） =====
     function closeApp() {
         var windowContainer = document.getElementById('app-window');
-        
+        
         // 我们不销毁 iframe，只隐藏容器，实现瞬间回桌面+保留应用状态
         windowContainer.style.display = 'none';
-        
-        // 把所有的 iframe 都取消 active 状态（可做可不做，为了严谨）
+        
+        // 把所有的 iframe 都取消 active 状态
         if (currentActiveApp && preloadedApps[currentActiveApp]) {
             preloadedApps[currentActiveApp].classList.remove('active');
         }
-        
+        
         currentActiveApp = null;
         navHistory = [];
         appIsOpen = false;
-        
+        
         console.log('📱 App closed, state saved in background.');
     }
 
     // ===== 返回上一页/上一个App =====
     function goBack() {
         if (!appIsOpen) return;
-        
+        
         if (navHistory.length > 0) {
             var prevTarget = navHistory.pop();
-            
+            
             // 隐藏当前的
             if (currentActiveApp && preloadedApps[currentActiveApp]) {
                 preloadedApps[currentActiveApp].classList.remove('active');
             }
-            
+            
             // 显示上一个
             var prevIframe = getOrCreateIframe(prevTarget);
             prevIframe.classList.add('active');
+            
+            // 【核心机制：唤醒广播】返回时同样通知子页面刷新数据
+            if (prevIframe.contentWindow) {
+                prevIframe.contentWindow.postMessage({ type: 'APP_ACTIVE' }, '*');
+            }
+            
             currentActiveApp = prevTarget;
-            
+            
             console.log('📱 Going back to:', prevTarget);
         } else {
             // 没有历史记录 -> 关闭应用回桌面
