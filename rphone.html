@@ -318,8 +318,10 @@
     const homeIndicator = document.getElementById('homeIndicator');
     
     if (homeIndicator) {
-      // 移除原有 history.back()
-      homeIndicator.addEventListener('click', () => {
+      // 覆盖原有的点击事件（通过 onclick 属性或 addEventListener）
+      // 为确保唯一性，先移除再添加
+      homeIndicator.removeEventListener('click', homeIndicator._clickHandler);
+      const clickHandler = () => {
         const appWindow = document.getElementById('app-window');
         // 如果当前有打开的子应用，则关闭子应用（返回桌面）
         if (appWindow && appWindow.style.display === 'block') {
@@ -328,7 +330,9 @@
           // 否则发送消息关闭整个手机窗口
           window.parent.postMessage({ type: 'CLOSE_PHONE' }, '*');
         }
-      });
+      };
+      homeIndicator.addEventListener('click', clickHandler);
+      homeIndicator._clickHandler = clickHandler;
     }
   });
 
