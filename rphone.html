@@ -191,6 +191,7 @@ html, body {
     background: #ccc;
 }
 
+/* 容器现在作为一个透明外壳 */
 #app-window {
     display: none;
     position: absolute;
@@ -198,21 +199,27 @@ html, body {
     left: 0;
     width: 100%;
     height: 100%;              
-    background: transparent; /* 去除白底 */
-    backdrop-filter: blur(8px); /* 添加背景模糊过渡 */
-    -webkit-backdrop-filter: blur(8px);
     z-index: 100000;
     border-radius: 0 0 28px 28px; 
+    overflow: hidden;
 }
 
-#app-screen {
+/* 预加载的所有 iframe 都使用这个样式 */
+.app-iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     border: none;
+    border-radius: 0 0 28px 28px;
+    background: white; /* 真实 App 背景色 */
+    display: none; /* 默认隐藏 */
+}
+
+/* 只有带 active 的 iframe 才会显示出来 */
+.app-iframe.active {
     display: block;
-    border-radius: 0 0 28px 28px; 
-    opacity: 0; /* 初始透明 */
-    transition: opacity 0.15s ease-in-out; /* 添加淡入淡出动画 */
 }
 	</style>
 </head>
@@ -307,13 +314,13 @@ html, body {
             <div class="home-bar"></div>
         </div>
 
-        <div id="app-window">
-            <iframe id="app-screen" src="" sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals"></iframe>
-        </div>
+        <div id="app-window"></div>
     </div>
 
     <script>
-    // ===== 导航历史栈 =====
+    // ===== 核心状态 =====
+    var preloadedApps = {}; // 存储所有预加载的 iframe
+    var currentActiveApp = null; // 当前正在前台的 App
     var navHistory = [];
     var appIsOpen = false;
 
@@ -323,79 +330,114 @@ html, body {
         var lastSlash = currentUrl.lastIndexOf('/');
         return currentUrl.substring(0, lastSlash + 1);
     }
-
     var BASE_URL = getBaseUrl();
 
-    // ===== 打开应用 =====
+    // ===== 初始化：预加载所有 App =====
+    function initPreload() {
+        var windowContainer = document.getElementById('app-window');
+        var allAppItems = document.querySelectorAll('.app-item[data-app]');
+        
+        allAppItems.forEach(function(item) {
+            var targetHtml = item.getAttribute('data-app');
+            if (targetHtml && !preloadedApps[targetHtml]) {
+                var fullUrl = targetHtml.indexOf('http') === 0 ? targetHtml : BASE_URL + targetHtml;
+                
+                // 在后台默默创建 iframe 并加载
+                var iframe = document.createElement('iframe');
+                iframe.className = 'app-iframe';
+                iframe.src = fullUrl;
+                iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-forms allow-modals');
+                
+                windowContainer.appendChild(iframe);
+                preloadedApps[targetHtml] = iframe; // 存入字典
+            }
+        });
+        console.log('📱 Phone OS Booted: Apps preloaded in background.');
+    }
+
+    // ===== 动态获取或创建（防遗漏机制） =====
+    function getOrCreateIframe(targetHtml) {
+        if (preloadedApps[targetHtml]) {
+            return preloadedApps[targetHtml];
+        }
+        // 如果是后来动态发消息请求的非桌面App，临时创建
+        var windowContainer = document.getElementById('app-window');
+        var fullUrl = targetHtml.indexOf('http') === 0 ? targetHtml : BASE_URL + targetHtml;
+        var iframe = document.createElement('iframe');
+        iframe.className = 'app-iframe';
+        iframe.src = fullUrl;
+        iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-forms allow-modals');
+        windowContainer.appendChild(iframe);
+        preloadedApps[targetHtml] = iframe;
+        return iframe;
+    }
+
+    // ===== 瞬间打开应用 =====
     function openApp(targetHtml) {
         if (!targetHtml) return;
         
         var windowContainer = document.getElementById('app-window');
-        var screenFrame = document.getElementById('app-screen');
         
-        var fullUrl = targetHtml;
-        if (targetHtml.indexOf('http') !== 0) {
-            fullUrl = BASE_URL + targetHtml;
+        // 1. 如果当前有正在前台的App，先把它隐身，并记入历史
+        if (appIsOpen && currentActiveApp && currentActiveApp !== targetHtml) {
+            navHistory.push(currentActiveApp);
+            if (preloadedApps[currentActiveApp]) {
+                preloadedApps[currentActiveApp].classList.remove('active');
+            }
         }
         
-        console.log('📱 Opening app:', fullUrl);
+        // 2. 拿到目标 App 的 iframe
+        var targetIframe = getOrCreateIframe(targetHtml);
         
-        if (appIsOpen && screenFrame.src && screenFrame.src !== '' && screenFrame.src !== 'about:blank') {
-            navHistory.push(screenFrame.src);
-        }
-        
-        // 先让 iframe 保持透明，显示容器
-        screenFrame.style.opacity = '0';
+        // 3. 瞬间显示！不再有网络请求和DOM重绘延迟
+        targetIframe.classList.add('active');
         windowContainer.style.display = 'block';
         
-        // 监听 iframe 加载，一旦新页面渲染完毕，瞬间淡入
-        screenFrame.onload = function() {
-            screenFrame.style.opacity = '1';
-            screenFrame.onload = null; // 清理事件
-        };
-        
-        // 最后再赋予 src，开始加载
-        screenFrame.src = fullUrl;
+        currentActiveApp = targetHtml;
         appIsOpen = true;
+        
+        console.log('📱 App instantly opened:', targetHtml);
     }
 
-    // ===== 关闭应用（返回桌面） =====
+    // ===== 关闭应用（退回桌面） =====
     function closeApp() {
         var windowContainer = document.getElementById('app-window');
-        var screenFrame = document.getElementById('app-screen');
         
-        // 先变透明，制造退出的视觉动画
-        screenFrame.style.opacity = '0';
+        // 我们不销毁 iframe，只隐藏容器，实现瞬间回桌面+保留应用状态
+        windowContainer.style.display = 'none';
         
-        // 延迟 150 毫秒（等淡出动画播完）后再真正隐藏容器
-        setTimeout(function() {
-            windowContainer.style.display = 'none';
-            screenFrame.src = '';
-            navHistory = [];
-            appIsOpen = false;
-        }, 150);
+        // 把所有的 iframe 都取消 active 状态（可做可不做，为了严谨）
+        if (currentActiveApp && preloadedApps[currentActiveApp]) {
+            preloadedApps[currentActiveApp].classList.remove('active');
+        }
         
-        console.log('📱 App closed, back to home');
+        currentActiveApp = null;
+        navHistory = [];
+        appIsOpen = false;
+        
+        console.log('📱 App closed, state saved in background.');
     }
 
-    // ===== 返回上一页 =====
+    // ===== 返回上一页/上一个App =====
     function goBack() {
         if (!appIsOpen) return;
         
         if (navHistory.length > 0) {
-            var prevUrl = navHistory.pop();
-            var screenFrame = document.getElementById('app-screen');
+            var prevTarget = navHistory.pop();
             
-            // 返回上一页时同样应用防闪烁逻辑
-            screenFrame.style.opacity = '0';
-            screenFrame.onload = function() {
-                screenFrame.style.opacity = '1';
-                screenFrame.onload = null;
-            };
-            screenFrame.src = prevUrl;
+            // 隐藏当前的
+            if (currentActiveApp && preloadedApps[currentActiveApp]) {
+                preloadedApps[currentActiveApp].classList.remove('active');
+            }
             
-            console.log('📱 Going back to:', prevUrl);
+            // 显示上一个
+            var prevIframe = getOrCreateIframe(prevTarget);
+            prevIframe.classList.add('active');
+            currentActiveApp = prevTarget;
+            
+            console.log('📱 Going back to:', prevTarget);
         } else {
+            // 没有历史记录 -> 关闭应用回桌面
             closeApp();
         }
     }
@@ -421,7 +463,6 @@ html, body {
                 e.preventDefault();
                 e.stopPropagation();
                 var target = item.getAttribute('data-app');
-                console.log('📱 App tapped:', target);
                 if (target) {
                     openApp(target);
                 }
@@ -449,7 +490,9 @@ html, body {
         }
     });
 
-    console.log('📱 rphone.html fully loaded, found', allAppItems.length, 'clickable apps');
+    // ===== 启动核心引擎：开机执行预加载 =====
+    window.addEventListener('DOMContentLoaded', initPreload);
+
     </script>
 </body>
 </html>
