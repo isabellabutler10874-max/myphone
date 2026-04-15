@@ -21,20 +21,14 @@ html, body {
     background: transparent;
 }
 
-/* =========================================
-   手机容器 - 窄边框，填满 iframe
-   ========================================= */
 .iphone {
     position: relative;
     width: 100%;
     height: 100%;
-    
     background-image: url('https://i.postimg.cc/KvNGSyyZ/IMG-8349.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    
-    /* 窄边框 */
     border-radius: 28px;
     border: 4px solid #1a1a1a;
     box-shadow: 0 0 0 1px rgba(255,255,255,0.08) inset;
@@ -43,7 +37,6 @@ html, body {
     flex-direction: column;
 }
 
-/* 灵动岛 */
 .dynamic-island {
     position: absolute;
     top: 8px;
@@ -56,9 +49,6 @@ html, body {
     z-index: 50;
 }
 
-/* =========================================
-   状态栏
-   ========================================= */
 .status-bar {
     position: relative;
     z-index: 40;
@@ -88,9 +78,6 @@ html, body {
     -webkit-text-stroke: 0.8px #ffffff;
 }
 
-/* =========================================
-   主屏图标区
-   ========================================= */
 .home-screen {
     flex: 1;
     padding: 30px 18px 10px 18px;
@@ -147,16 +134,12 @@ html, body {
     text-align: center;
 }
 
-/* 各应用的专属背景渐变色 */
 .bg-weibo   { background: linear-gradient(180deg, #ff4d64, #e6162d); }
 .bg-settings{ background: linear-gradient(180deg, #a0a4aa, #727880); }
 .bg-theme   { background: linear-gradient(180deg, #ff85c2, #ff69b4); }
 .bg-phone   { background: linear-gradient(180deg, #52d667, #34c759); }
 .bg-contacts{ background: linear-gradient(180deg, #b0b4b8, #8e8e93); }
 
-/* =========================================
-   底部 Dock 栏
-   ========================================= */
 .dock {
     margin: 0 10px 28px 10px;
     height: 76px;
@@ -177,9 +160,6 @@ html, body {
     display: none;
 }
 
-/* =========================================
-   底部 Home 指示条
-   ========================================= */
 .home-indicator-area {
     position: absolute;
     bottom: 0;
@@ -190,7 +170,6 @@ html, body {
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    /* 关键：必须在 app-window 之上 */
     z-index: 200000;
     -webkit-tap-highlight-color: transparent;
 }
@@ -212,16 +191,12 @@ html, body {
     background: #ccc;
 }
 
-/* =========================================
-   应用窗口层（覆盖在主屏之上）
-   ========================================= */
 #app-window {
     display: none;
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
-    /* 关键修复：留出底部 home bar 的空间，让 home bar 不被遮挡 */
     height: calc(100% - 28px);
     background: white;
     z-index: 100000;
@@ -251,7 +226,6 @@ html, body {
         </div>
 
         <div class="home-screen" id="home-screen">
-            <!-- 第一行 -->
             <div class="app-item" data-app="weixin.html">
                 <div class="app-icon">
                     <img src="https://i.postimg.cc/L53NQ5Pk/IMG-8340.jpg">
@@ -273,7 +247,6 @@ html, body {
                 <div class="app-name">日记</div>
             </div>
 
-            <!-- 第二行 -->
             <div class="app-item" data-app="zichan.html">
                 <div class="app-icon">
                     <img src="https://i.postimg.cc/gc56Zm6K/IMG-8346.jpg">
@@ -293,7 +266,6 @@ html, body {
                 <div class="app-name">微博</div>
             </div>
 
-            <!-- 第三行 -->
             <div class="app-item">
                 <div class="app-icon bg-settings"><i class="fa-solid fa-gear"></i></div>
                 <div class="app-name">设置</div>
@@ -312,7 +284,6 @@ html, body {
             </div>
         </div>
 
-        <!-- Dock 栏 -->
         <div class="dock">
             <div class="app-item">
                 <div class="app-icon bg-phone"><i class="fa-solid fa-phone"></i></div>
@@ -327,12 +298,10 @@ html, body {
             </div>
         </div>
 
-        <!-- 底部 Home 指示条 -->
         <div class="home-indicator-area" id="homeIndicator" title="返回">
             <div class="home-bar"></div>
         </div>
 
-        <!-- 应用窗口层 -->
         <div id="app-window">
             <iframe id="app-screen" src="" sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals"></iframe>
         </div>
@@ -345,7 +314,6 @@ html, body {
 
     // ===== 获取基础URL =====
     function getBaseUrl() {
-        // 获取当前页面的目录路径，用于拼接子页面的绝对URL
         var currentUrl = window.location.href;
         var lastSlash = currentUrl.lastIndexOf('/');
         return currentUrl.substring(0, lastSlash + 1);
@@ -360,7 +328,6 @@ html, body {
         var windowContainer = document.getElementById('app-window');
         var screenFrame = document.getElementById('app-screen');
         
-        // 使用绝对URL确保子页面能正确加载
         var fullUrl = targetHtml;
         if (targetHtml.indexOf('http') !== 0) {
             fullUrl = BASE_URL + targetHtml;
@@ -368,7 +335,6 @@ html, body {
         
         console.log('📱 Opening app:', fullUrl);
         
-        // 记录历史
         if (appIsOpen && screenFrame.src && screenFrame.src !== '' && screenFrame.src !== 'about:blank') {
             navHistory.push(screenFrame.src);
         }
@@ -396,10 +362,66 @@ html, body {
         if (!appIsOpen) return;
         
         if (navHistory.length > 0) {
-            // 有历史记录 -> 返回上一页
             var prevUrl = navHistory.pop();
             var screenFrame = document.getElementById('app-screen');
             screenFrame.src = prevUrl;
             console.log('📱 Going back to:', prevUrl);
         } else {
-            // 没有历史记录 -> 关闭应用回桌
+            // 没有历史记录 -> 关闭应用回桌面
+            closeApp();
+        }
+    }
+
+    // ===== 时钟更新 =====
+    function updateClock() {
+        var now = new Date();
+        var h = String(now.getHours()).padStart(2, '0');
+        var m = String(now.getMinutes()).padStart(2, '0');
+        var clockEl = document.getElementById('sys-clock');
+        if (clockEl) {
+            clockEl.textContent = h + ':' + m;
+        }
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // ===== 绑定所有 app-item 的点击事件 =====
+    var allAppItems = document.querySelectorAll('.app-item[data-app]');
+    for (var i = 0; i < allAppItems.length; i++) {
+        (function(item) {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var target = item.getAttribute('data-app');
+                console.log('📱 App tapped:', target);
+                if (target) {
+                    openApp(target);
+                }
+            });
+        })(allAppItems[i]);
+    }
+
+    // ===== 绑定 Home 指示条 =====
+    var homeBtn = document.getElementById('homeIndicator');
+    if (homeBtn) {
+        homeBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            goBack();
+        });
+    }
+
+    // ===== 监听子页面发来的导航消息 =====
+    window.addEventListener('message', function(e) {
+        if (e.data && e.data.type === 'NAVIGATE') {
+            openApp(e.data.target);
+        }
+        if (e.data && e.data.type === 'GO_BACK') {
+            goBack();
+        }
+    });
+
+    console.log('📱 rphone.html fully loaded, found', allAppItems.length, 'clickable apps');
+    </script>
+</body>
+</html>
