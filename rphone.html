@@ -371,58 +371,57 @@ html, body {
         preloadedApps[targetHtml] = iframe;
         return iframe;
     }
-
-    // ===== 瞬间打开应用 =====
+// ===== 瞬间打开应用 =====
     function openApp(targetHtml) {
         if (!targetHtml) return;
-        
+        
         var windowContainer = document.getElementById('app-window');
-        
-        // 1. 如果当前有正在前台的App，先把它隐身，并记入历史
+        
+        // 如果当前有正在前台的App，先把它隐身，并记入历史
         if (appIsOpen && currentActiveApp && currentActiveApp !== targetHtml) {
             navHistory.push(currentActiveApp);
             if (preloadedApps[currentActiveApp]) {
                 preloadedApps[currentActiveApp].classList.remove('active');
             }
         }
-        
-        // 2. 拿到目标 App 的 iframe
+        
         var targetIframe = getOrCreateIframe(targetHtml);
-        
-        // 3. 瞬间显示！不再有网络请求和DOM重绘延迟
+        
         targetIframe.classList.add('active');
         windowContainer.style.display = 'block';
-        
-        // 【核心机制：唤醒广播】通知子页面它被打开了，可以刷新数据了
+
+        // 👇【解决双状态栏的关键 1】：打开 App 时，彻底隐藏外层桌面的状态栏和灵动岛
+        document.querySelector('.status-bar').style.display = 'none';
+        document.querySelector('.dynamic-island').style.display = 'none';
+        
+        // 发送唤醒广播给子页面
         if (targetIframe.contentWindow) {
             targetIframe.contentWindow.postMessage({ type: 'APP_ACTIVE' }, '*');
         }
-        
+        
         currentActiveApp = targetHtml;
         appIsOpen = true;
-        
-        console.log('📱 App instantly opened:', targetHtml);
     }
 
     // ===== 关闭应用（退回桌面） =====
     function closeApp() {
         var windowContainer = document.getElementById('app-window');
-        
-        // 我们不销毁 iframe，只隐藏容器，实现瞬间回桌面+保留应用状态
+        
+        // 隐藏应用容器
         windowContainer.style.display = 'none';
-        
-        // 把所有的 iframe 都取消 active 状态
+        
         if (currentActiveApp && preloadedApps[currentActiveApp]) {
             preloadedApps[currentActiveApp].classList.remove('active');
         }
-        
+
+        // 👇【解决双状态栏的关键 2】：退回桌面时，恢复显示桌面的状态栏和灵动岛
+        document.querySelector('.status-bar').style.display = 'flex';
+        document.querySelector('.dynamic-island').style.display = 'block';
+        
         currentActiveApp = null;
         navHistory = [];
         appIsOpen = false;
-        
-        console.log('📱 App closed, state saved in background.');
-    }
-
+	}
     // ===== 返回上一页/上一个App =====
     function goBack() {
         if (!appIsOpen) return;
