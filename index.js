@@ -1,11 +1,10 @@
 // ================================================================
-//  虚拟手机扩展 - 纯透明可拖动窗口 + 始终可见悬浮球
+//  虚拟手机扩展 - 纯透明可拖动窗口 + 始终可见悬浮球（优化版）
 // ================================================================
 
 const IS_TOUCH_DEVICE = window.matchMedia('(hover: none) and (pointer: coarse)').matches
                      || /Android|iPhone|iPod/i.test(navigator.userAgent);
 
-// 极简样式：悬浮球 + 完全透明的手机容器 + 透明拖动把手
 const CSS = `
 /* 悬浮球 - 强制右下角，无视任何 transform */
 #rp-fab {
@@ -92,7 +91,6 @@ function injectStyles() {
 }
 
 function createUI() {
-  // 悬浮球
   const fab = document.createElement('div');
   fab.id = 'rp-fab';
   fab.innerHTML = `
@@ -109,7 +107,6 @@ function createUI() {
   `;
   document.body.appendChild(fab);
 
-  // 手机宿主容器
   const host = document.createElement('div');
   host.id = 'rp-phone-host';
   host.innerHTML = `
@@ -118,15 +115,9 @@ function createUI() {
   `;
   document.body.appendChild(host);
 
-  return {
-    fab,
-    host,
-    iframe: host.querySelector('#rp-phone-iframe'),
-    dragHandle: host.querySelector('#rp-drag-handle')
-  };
+  return { fab, host, iframe: host.querySelector('#rp-phone-iframe'), dragHandle: host.querySelector('#rp-drag-handle') };
 }
 
-// 拖动窗口
 function makeWindowDraggable(win, handle) {
   let dragging = false, startX, startY, startLeft, startTop;
 
@@ -135,10 +126,8 @@ function makeWindowDraggable(win, handle) {
     e.preventDefault();
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
-    let newLeft = startLeft + dx;
-    let newTop = startTop + dy;
-    win.style.left = newLeft + 'px';
-    win.style.top = newTop + 'px';
+    win.style.left = (startLeft + dx) + 'px';
+    win.style.top = (startTop + dy) + 'px';
   };
 
   const onMouseUp = () => {
@@ -162,7 +151,6 @@ function makeWindowDraggable(win, handle) {
 
   handle.addEventListener('mousedown', startDrag);
 
-  // 触摸事件
   const startDragTouch = (e) => {
     const touch = e.touches[0];
     const rect = win.getBoundingClientRect();
@@ -175,12 +163,8 @@ function makeWindowDraggable(win, handle) {
       if (!dragging) return;
       e2.preventDefault();
       const touch2 = e2.touches[0];
-      const dx = touch2.clientX - startX;
-      const dy = touch2.clientY - startY;
-      let newLeft = startLeft + dx;
-      let newTop = startTop + dy;
-      win.style.left = newLeft + 'px';
-      win.style.top = newTop + 'px';
+      win.style.left = (startLeft + (touch2.clientX - startX)) + 'px';
+      win.style.top = (startTop + (touch2.clientY - startY)) + 'px';
     };
     const onTouchEnd = () => {
       dragging = false;
@@ -194,7 +178,6 @@ function makeWindowDraggable(win, handle) {
   handle.addEventListener('touchstart', startDragTouch, { passive: false });
 }
 
-// 悬浮球可拖动（位置会被保存）
 function makeFabDraggable(fab) {
   let dragging = false, startX, startY, startLeft, startTop;
   const onMove = (e) => {
@@ -202,10 +185,9 @@ function makeFabDraggable(fab) {
     e.preventDefault();
     const clientX = e.clientX ?? e.touches[0].clientX;
     const clientY = e.clientY ?? e.touches[0].clientY;
-    const dx = clientX - startX;
-    const dy = clientY - startY;
-    let newLeft = startLeft + dx;
-    let newTop = startTop + dy;
+    let newLeft = startLeft + (clientX - startX);
+    let newTop = startTop + (clientY - startY);
+    // 边界限制，保证悬浮球完整可见
     newLeft = Math.max(0, Math.min(window.innerWidth - fab.offsetWidth, newLeft));
     newTop = Math.max(0, Math.min(window.innerHeight - fab.offsetHeight, newTop));
     fab.style.left = newLeft + 'px';
@@ -246,27 +228,30 @@ function makeFabDraggable(fab) {
   });
 }
 
-// 恢复悬浮球位置（竖屏也永远可见）
 function fixFabPosition(fab) {
   const saved = localStorage.getItem('rp_fab_pos');
   if (saved) {
     try {
       const { left, top } = JSON.parse(saved);
-      fab.style.left = left;
-      fab.style.top = top;
-      fab.style.right = 'auto';
-      fab.style.bottom = 'auto';
-      return;
+      // 校验保存的位置是否依然在可视区域内
+      const l = parseFloat(left);
+      const t = parseFloat(top);
+      if (!isNaN(l) && !isNaN(t) && l >= 0 && t >= 0 && l <= window.innerWidth - fab.offsetWidth && t <= window.innerHeight - fab.offsetHeight) {
+        fab.style.left = left;
+        fab.style.top = top;
+        fab.style.right = 'auto';
+        fab.style.bottom = 'auto';
+        return;
+      }
     } catch(e) {}
   }
-  // 默认右下角
+  // 默认右下角（强制使用 right/bottom 确保可见）
   fab.style.right = '20px';
   fab.style.bottom = '20px';
   fab.style.left = 'auto';
   fab.style.top = 'auto';
 }
 
-// 监听来自 iframe 的关闭消息
 function setupMessageListener(host) {
   window.addEventListener('message', (e) => {
     if (e.data && e.data.type === 'CLOSE_PHONE') {
@@ -275,14 +260,13 @@ function setupMessageListener(host) {
   });
 }
 
-// 初始化
 async function init() {
   injectStyles();
   const { fab, host, iframe, dragHandle } = createUI();
 
-  // 初始位置
-  host.style.left = (window.innerWidth - 390 - 20) + 'px';
-  host.style.top = (window.innerHeight - 650 - 20) + 'px';
+  // 初始位置（右下角偏内）
+  host.style.left = Math.max(20, window.innerWidth - 390 - 20) + 'px';
+  host.style.top = Math.max(20, window.innerHeight - 650 - 20) + 'px';
 
   makeWindowDraggable(host, dragHandle);
   makeFabDraggable(fab);
@@ -311,8 +295,11 @@ async function init() {
   });
 
   setupMessageListener(host);
-
-  console.log('📱 虚拟手机扩展已加载 - 透明无边框版');
+  console.log('📱 虚拟手机扩展已加载 - 优化版');
 }
 
-jQuery(() => init());
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
