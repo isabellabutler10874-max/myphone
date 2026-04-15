@@ -311,46 +311,54 @@
         </div>
     </div>
 
-    <script>
-	// 等待 DOM 加载完成
-	document.addEventListener('DOMContentLoaded', () => {
-	    const homeIndicator = document.getElementById('homeIndicator');
-	    
-	    if (homeIndicator) {
-	        // 移除原有的 history.back() 逻辑，改为发送关闭消息
-	        homeIndicator.addEventListener('click', () => {
-	            // 向父窗口（SillyTavern 扩展）发送关闭手机的消息
-	            window.parent.postMessage({ type: 'CLOSE_PHONE' }, '*');
-	        });
-	    }
-	});
+<script>
+(function() {
+  // 等待 DOM 加载完成
+  document.addEventListener('DOMContentLoaded', () => {
+    const homeIndicator = document.getElementById('homeIndicator');
+    
+    if (homeIndicator) {
+      // 移除原有 history.back()
+      homeIndicator.addEventListener('click', () => {
+        const appWindow = document.getElementById('app-window');
+        // 如果当前有打开的子应用，则关闭子应用（返回桌面）
+        if (appWindow && appWindow.style.display === 'block') {
+          closeApp();
+        } else {
+          // 否则发送消息关闭整个手机窗口
+          window.parent.postMessage({ type: 'CLOSE_PHONE' }, '*');
+        }
+      });
+    }
+  });
 
-	// 打开内嵌应用
-	function openApp(targetHtml) {
-	    var windowContainer = document.getElementById('app-window');
-	    var screenFrame = document.getElementById('app-screen');
-	    screenFrame.src = targetHtml;
-	    windowContainer.style.display = 'block';
-	}
+  // 打开内嵌应用
+  window.openApp = function(targetHtml) {
+    var windowContainer = document.getElementById('app-window');
+    var screenFrame = document.getElementById('app-screen');
+    screenFrame.src = targetHtml;
+    windowContainer.style.display = 'block';
+  };
 
-	// 关闭内嵌应用（返回桌面）
-	function closeApp() {
-	    var windowContainer = document.getElementById('app-window');
-	    var screenFrame = document.getElementById('app-screen');
-	    windowContainer.style.display = 'none';
-	    screenFrame.src = '';
-	}
+  // 关闭内嵌应用（返回桌面）
+  window.closeApp = function() {
+    var windowContainer = document.getElementById('app-window');
+    var screenFrame = document.getElementById('app-screen');
+    windowContainer.style.display = 'none';
+    screenFrame.src = '';
+  };
 
-	// 动态更新时间
-	function updateSystemTime() {
-	    const now = new Date();
-	    const hours = String(now.getHours()).padStart(2, '0');
-	    const minutes = String(now.getMinutes()).padStart(2, '0');
-	    const sysClock = document.getElementById('sys-clock');
-	    if (sysClock) sysClock.innerText = `${hours}:${minutes}`;
-	}
-	setInterval(updateSystemTime, 1000);
-	updateSystemTime();
-    </script>
+  // 动态更新时间
+  function updateSystemTime() {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const sysClock = document.getElementById('sys-clock');
+    if (sysClock) sysClock.innerText = `${hours}:${minutes}`;
+  }
+  setInterval(updateSystemTime, 1000);
+  updateSystemTime();
+})();
+</script>
 </body>
 </html>
