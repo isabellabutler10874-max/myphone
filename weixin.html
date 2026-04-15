@@ -633,20 +633,40 @@ function toggleBlock() {
     saveData();
 }
 
-function pushMessage(msgObj) {
-    const friend = friends.find(f => f.id === currentFriendId);
+// 🌟 升级版 pushMessage：支持根据好友 ID 或名字自动分发消息与创建好友 🌟
+function pushMessage(msgObj, targetId = currentFriendId) {
+    if (!targetId) return;
+
+    let friend = friends.find(f => f.name === targetId || f.id === targetId);
+
+    if (!friend) {
+        const newId = "id_" + Date.now();
+        friend = { id: newId, name: targetId, avatar: defaultAvatar, isBlocked: false };
+        friends.unshift(friend);
+        chats[newId] = [];
+    }
+
+    const actualId = friend.id;
+    if (!chats[actualId]) chats[actualId] = [];
+
     const isMeBlocked = (msgObj.sender === 'me' && friend.isBlocked);
     if (isMeBlocked) msgObj.isError = true;
 
-    chats[currentFriendId].push(msgObj);
-    saveData(); 
-    renderChatMessages();
+    chats[actualId].push(msgObj);
+    saveData();
+
+    if (actualId === currentFriendId) {
+        renderChatMessages();
+    } else {
+        renderChatList();
+    }
 
     if (isMeBlocked) {
         setTimeout(() => {
-            chats[currentFriendId].push({ id: Date.now() + 1, type: 'system', content: '消息已发出，但被对方拒收了。(已被对方拉黑)' });
+            chats[actualId].push({ id: Date.now() + 1, type: 'system', content: '消息已发出，但被对方拒收了。(已被对方拉黑)' });
             saveData();
-            renderChatMessages();
+            if (actualId === currentFriendId) renderChatMessages();
+            renderChatList();
         }, 300);
     }
 }
